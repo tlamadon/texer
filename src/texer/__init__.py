@@ -2,10 +2,10 @@
 
 from texer.specs import Ref, Iter, Format, Cond, Literal, Raw, Spec
 from texer.tables import Table, Tabular, Row, Cell, MultiColumn, MultiRow
-from texer.pgfplots import PGFPlot, Axis, AddPlot, Coordinates, Legend
+from texer.pgfplots import PGFPlot, Axis, AddPlot, Coordinates, Legend, GroupPlot, NextGroupPlot
 from texer.eval import evaluate
 
-__version__ = "0.1.0"
+__version__ = "0.2.0"
 
 __all__ = [
     # Specs
@@ -29,6 +29,8 @@ __all__ = [
     "AddPlot",
     "Coordinates",
     "Legend",
+    "GroupPlot",
+    "NextGroupPlot",
     # Evaluation
     "evaluate",
 ]

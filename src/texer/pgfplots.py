@@ -322,10 +322,241 @@ class Axis:
 
 
 @dataclass
+class NextGroupPlot:
+    """A \\nextgroupplot command within a groupplot environment.
+
+    Examples:
+        NextGroupPlot(
+            title="Plot 1",
+            xlabel="X",
+            plots=[AddPlot(...)]
+        )
+    """
+
+    plots: list[AddPlot] = field(default_factory=list)
+
+    # Axis labels
+    xlabel: str | Spec | None = None
+    ylabel: str | Spec | None = None
+    zlabel: str | Spec | None = None
+    title: str | Spec | None = None
+
+    # Axis limits
+    xmin: float | None = None
+    xmax: float | None = None
+    ymin: float | None = None
+    ymax: float | None = None
+    zmin: float | None = None
+    zmax: float | None = None
+
+    # Legend
+    legend: list[Any] | Legend | None = None
+    legend_pos: str | None = None
+    legend_style: str | None = None
+
+    # Grid
+    grid: str | bool | None = None
+
+    # Other options
+    enlargelimits: bool | float | None = None
+    clip: bool | None = None
+    axis_lines: str | None = None
+
+    # Raw options escape hatch
+    _raw_options: str | None = None
+
+    def render(self, data: Any, scope: dict[str, Any] | None = None) -> str:
+        """Render the nextgroupplot command and its contents."""
+        if scope is None:
+            scope = {}
+
+        from texer.eval import _evaluate_impl
+
+        # Build options
+        options = {}
+
+        # Labels (resolve if Spec)
+        if self.xlabel is not None:
+            options["xlabel"] = _evaluate_impl(self.xlabel, data, scope, escape=False)
+        if self.ylabel is not None:
+            options["ylabel"] = _evaluate_impl(self.ylabel, data, scope, escape=False)
+        if self.zlabel is not None:
+            options["zlabel"] = _evaluate_impl(self.zlabel, data, scope, escape=False)
+        if self.title is not None:
+            options["title"] = _evaluate_impl(self.title, data, scope, escape=False)
+
+        # Limits
+        if self.xmin is not None:
+            options["xmin"] = self.xmin
+        if self.xmax is not None:
+            options["xmax"] = self.xmax
+        if self.ymin is not None:
+            options["ymin"] = self.ymin
+        if self.ymax is not None:
+            options["ymax"] = self.ymax
+        if self.zmin is not None:
+            options["zmin"] = self.zmin
+        if self.zmax is not None:
+            options["zmax"] = self.zmax
+
+        # Legend position
+        if self.legend_pos is not None:
+            options["legend pos"] = self.legend_pos
+        if self.legend_style is not None:
+            options["legend style"] = self.legend_style
+
+        # Grid
+        if self.grid is True:
+            options["grid"] = "major"
+        elif self.grid:
+            options["grid"] = self.grid
+
+        # Other options
+        if self.enlargelimits is not None:
+            options["enlargelimits"] = self.enlargelimits
+        if self.clip is not None:
+            options["clip"] = self.clip
+        if self.axis_lines is not None:
+            options["axis lines"] = self.axis_lines
+
+        # Format options
+        opts_str = format_options(options, self._raw_options)
+
+        lines = []
+
+        # Opening
+        if opts_str:
+            lines.append(f"\\nextgroupplot[{opts_str}]")
+        else:
+            lines.append("\\nextgroupplot")
+
+        # Plots
+        for plot in self.plots:
+            lines.append(f"  {plot.render(data, scope)}")
+
+        # Legend
+        if self.legend is not None:
+            if isinstance(self.legend, Legend):
+                lines.append(f"  {self.legend.render(data, scope)}")
+            else:
+                legend = Legend(self.legend)
+                lines.append(f"  {legend.render(data, scope)}")
+
+        return "\n".join(lines)
+
+
+@dataclass
+class GroupPlot:
+    """A groupplot environment for creating multiple plots in a grid layout.
+
+    Examples:
+        GroupPlot(
+            group_style={"group size": "2 by 2"},
+            plots=[
+                NextGroupPlot(title="Plot 1", plots=[...]),
+                NextGroupPlot(title="Plot 2", plots=[...]),
+                NextGroupPlot(title="Plot 3", plots=[...]),
+                NextGroupPlot(title="Plot 4", plots=[...]),
+            ]
+        )
+    """
+
+    plots: list[NextGroupPlot] = field(default_factory=list)
+
+    # Group style options
+    group_size: str | None = None  # e.g., "2 by 2"
+    horizontal_sep: str | None = None
+    vertical_sep: str | None = None
+    xlabels_at: str | None = None  # e.g., "edge bottom"
+    ylabels_at: str | None = None  # e.g., "edge left"
+    xticklabels_at: str | None = None
+    yticklabels_at: str | None = None
+
+    # Common axis options (applied to all subplots)
+    width: str | None = None
+    height: str | None = None
+    xmin: float | None = None
+    xmax: float | None = None
+    ymin: float | None = None
+    ymax: float | None = None
+
+    # Raw options escape hatch
+    _raw_options: str | None = None
+    _raw_group_style: str | None = None
+
+    def render(self, data: Any, scope: dict[str, Any] | None = None) -> str:
+        """Render the groupplot environment."""
+        if scope is None:
+            scope = {}
+
+        # Build group style options
+        group_style_opts = {}
+        if self.group_size is not None:
+            group_style_opts["group size"] = self.group_size
+        if self.horizontal_sep is not None:
+            group_style_opts["horizontal sep"] = self.horizontal_sep
+        if self.vertical_sep is not None:
+            group_style_opts["vertical sep"] = self.vertical_sep
+        if self.xlabels_at is not None:
+            group_style_opts["xlabels at"] = self.xlabels_at
+        if self.ylabels_at is not None:
+            group_style_opts["ylabels at"] = self.ylabels_at
+        if self.xticklabels_at is not None:
+            group_style_opts["xticklabels at"] = self.xticklabels_at
+        if self.yticklabels_at is not None:
+            group_style_opts["yticklabels at"] = self.yticklabels_at
+
+        # Build main options
+        options = {}
+
+        # Add group style if present
+        group_style_str = format_options(group_style_opts, self._raw_group_style)
+        if group_style_str:
+            options["group style"] = f"{{{group_style_str}}}"
+
+        # Common options
+        if self.width is not None:
+            options["width"] = self.width
+        if self.height is not None:
+            options["height"] = self.height
+        if self.xmin is not None:
+            options["xmin"] = self.xmin
+        if self.xmax is not None:
+            options["xmax"] = self.xmax
+        if self.ymin is not None:
+            options["ymin"] = self.ymin
+        if self.ymax is not None:
+            options["ymax"] = self.ymax
+
+        # Format options
+        opts_str = format_options(options, self._raw_options)
+
+        lines = []
+
+        # Opening
+        if opts_str:
+            lines.append(f"\\begin{{groupplot}}[{opts_str}]")
+        else:
+            lines.append("\\begin{groupplot}")
+
+        # Render each plot
+        for plot in self.plots:
+            plot_lines = plot.render(data, scope)
+            for line in plot_lines.split("\n"):
+                lines.append(f"  {line}" if line else line)
+
+        # Closing
+        lines.append("\\end{groupplot}")
+
+        return "\n".join(lines)
+
+
+@dataclass
 class PGFPlot:
     """A complete PGFPlots tikzpicture.
 
     Examples:
+        # Single axis
         PGFPlot(
             Axis(
                 xlabel="X",
@@ -333,9 +564,20 @@ class PGFPlot:
                 plots=[AddPlot(coords=Coordinates([...]))]
             )
         )
+
+        # Multiple plots in a grid with groupplot
+        PGFPlot(
+            GroupPlot(
+                group_size="2 by 2",
+                plots=[
+                    NextGroupPlot(...),
+                    NextGroupPlot(...),
+                ]
+            )
+        )
     """
 
-    axis: Axis
+    axis: Axis | GroupPlot
     preamble: list[str] = field(default_factory=list)
     scale: float | None = None
     _raw_options: str | None = None
@@ -380,6 +622,7 @@ class PGFPlot:
             "\\documentclass{standalone}",
             "\\usepackage{pgfplots}",
             "\\pgfplotsset{compat=1.18}",
+            "\\usepgfplotslibrary{groupplots}",
             "",
             "\\begin{document}",
         ]
