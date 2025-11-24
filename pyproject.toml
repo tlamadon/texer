@@ -7,22 +7,35 @@ name = "texer"
 version = "0.1.0"
 description = "Generate LaTeX tables and figures with glom-style specs"
 readme = "README.md"
-license = {text = "MIT"}
+license = "MIT"
 requires-python = ">=3.9"
+authors = [
+    {name = "Thibaut Lamadon", email = "thibaut.lamadon@example.com"},
+]
+keywords = ["latex", "tables", "pgfplots", "tikz", "typesetting", "scientific"]
 classifiers = [
     "Development Status :: 3 - Alpha",
     "Intended Audience :: Science/Research",
-    "License :: OSI Approved :: MIT License",
+    "Intended Audience :: Developers",
+    "Operating System :: OS Independent",
     "Programming Language :: Python :: 3",
     "Programming Language :: Python :: 3.9",
     "Programming Language :: Python :: 3.10",
     "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",
     "Topic :: Text Processing :: Markup :: LaTeX",
+    "Topic :: Scientific/Engineering",
+    "Typing :: Typed",
 ]
 dependencies = [
     "glom>=23.0.0",
 ]
+
+[project.urls]
+# TODO: Add your repository URL
+# Homepage = "https://github.com/yourusername/texer"
+# Repository = "https://github.com/yourusername/texer"
+# Documentation = "https://github.com/yourusername/texer#readme"
 
 [project.optional-dependencies]
 dev = [

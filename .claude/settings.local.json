@@ -5,7 +5,9 @@
       "Bash(pip install:*)",
       "Bash(python -m pytest:*)",
       "Bash(python /workspaces/texer/examples/demo.py:*)",
-      "Bash(python:*)"
+      "Bash(python:*)",
+      "Bash(pip index:*)",
+      "Bash(twine check:*)"
     ],
     "deny": [],
     "ask": []
