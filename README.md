@@ -369,6 +369,122 @@ data = {
 print(evaluate(plot, data))
 ```
 
+### Dynamic Multiple Series with Iter
+
+For more flexibility, you can use `Iter` to dynamically generate multiple `AddPlot` instances from a list of series specifications in your data. This is especially useful when the number of series isn't known ahead of time:
+
+```python
+from texer import PGFPlot, Axis, AddPlot, Coordinates, Ref, Iter, evaluate
+
+# Define structure where plots themselves are generated from data
+plot = PGFPlot(
+    Axis(
+        xlabel=Ref("x_label"),
+        ylabel=Ref("y_label"),
+        title=Ref("title"),
+        legend_pos="north west",
+        grid=True,
+        # Iterate over series list to create multiple AddPlot instances
+        plots=Iter(
+            Ref("series"),  # List of series specifications
+            template=AddPlot(
+                color=Ref("color"),    # Each series has its own color
+                mark=Ref("marker"),    # and marker style
+                coords=Coordinates(
+                    Iter(Ref("data"), x=Ref("t"), y=Ref("value"))
+                ),
+            )
+        ),
+        legend=Iter(Ref("series"), template=Ref("name")),
+    )
+)
+
+# Data with multiple series
+data = {
+    "title": "Temperature Sensors",
+    "x_label": "Time (hours)",
+    "y_label": "Temperature (°C)",
+    "series": [
+        {
+            "name": "Sensor 1",
+            "color": "blue",
+            "marker": "*",
+            "data": [
+                {"t": 0, "value": 20.5},
+                {"t": 1, "value": 22.3},
+                {"t": 2, "value": 25.1},
+            ],
+        },
+        {
+            "name": "Sensor 2",
+            "color": "red",
+            "marker": "square*",
+            "data": [
+                {"t": 0, "value": 19.8},
+                {"t": 1, "value": 21.5},
+                {"t": 2, "value": 24.2},
+            ],
+        },
+        {
+            "name": "Sensor 3",
+            "color": "green",
+            "marker": "triangle*",
+            "data": [
+                {"t": 0, "value": 20.1},
+                {"t": 1, "value": 22.8},
+                {"t": 2, "value": 25.5},
+            ],
+        },
+    ],
+}
+
+print(evaluate(plot, data))
+```
+
+This pattern scales naturally - adding a fourth sensor is just adding another entry to the `series` list in your data. No changes to the structure needed!
+
+The same approach works with NumPy arrays:
+
+```python
+import numpy as np
+from texer import PGFPlot, Axis, AddPlot, Coordinates, Ref, Iter, evaluate
+
+plot = PGFPlot(
+    Axis(
+        xlabel="$x$",
+        ylabel="$f(x)$",
+        grid=True,
+        legend_pos="south east",
+        plots=Iter(
+            Ref("series"),
+            template=AddPlot(
+                color=Ref("color"),
+                no_marks=True,
+                thick=True,
+                style=Ref("line_style"),
+                coords=Coordinates(x=Ref("x"), y=Ref("y")),  # Direct array refs
+            )
+        ),
+        legend=Iter(Ref("series"), template=Ref("label")),
+    )
+)
+
+# Generate data with NumPy
+x = np.linspace(0, 2*np.pi, 100)
+data = {
+    "series": [
+        {"label": r"$\sin(x)$", "color": "blue", "line_style": "solid",
+         "x": x, "y": np.sin(x)},
+        {"label": r"$\cos(x)$", "color": "red", "line_style": "dashed",
+         "x": x, "y": np.cos(x)},
+        {"label": r"$\sin(2x)$", "color": "green", "line_style": "dotted",
+         "x": x, "y": np.sin(2*x)},
+    ]
+}
+
+print(evaluate(plot, data))
+```
+
 ### Using NumPy Arrays
 
 `Coordinates` supports direct creation from NumPy arrays (or plain Python lists) using separate `x` and `y` parameters:
