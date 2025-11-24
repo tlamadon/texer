@@ -167,6 +167,9 @@ class Iter(Spec):
         for item in items:
             # Create a new scope with the current item as the data context
             item_scope = dict(scope) if scope else {}
+            # If item is a dict, add its keys to the scope for nested access
+            if isinstance(item, dict):
+                item_scope.update(item)
 
             if self.template is not None:
                 # Template mode: resolve template against each item
