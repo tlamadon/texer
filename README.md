@@ -772,6 +772,61 @@ Tabular(..., _raw_options="@{}l@{}")
 
 ---
 
+## Saving and Compiling
+
+### Save to File
+
+Save LaTeX code to a `.tex` file:
+
+```python
+from texer import PGFPlot, Axis, AddPlot, Coordinates
+import numpy as np
+
+# Create a plot
+x = np.linspace(0, 2*np.pi, 100)
+plot = PGFPlot(
+    Axis(
+        xlabel="$x$",
+        ylabel="$f(x)$",
+        plots=[AddPlot(coords=Coordinates(x=x, y=np.sin(x)))],
+    )
+)
+
+# Save with preamble (for standalone compilation)
+plot.save_to_file("my_plot.tex")
+
+# Save without preamble (for inclusion in larger document)
+plot.save_to_file("my_plot_content.tex", with_preamble=False)
+
+# Save with data
+plot.save_to_file("my_plot.tex", data=my_data)
+```
+
+### Compile to PDF
+
+Compile directly to PDF using `pdflatex`:
+
+```python
+# Compile to PDF (saves .tex and compiles in one step)
+pdf_path = plot.compile_to_pdf("my_plot.tex")
+print(f"PDF saved to: {pdf_path}")
+
+# With data
+pdf_path = plot.compile_to_pdf("my_plot.tex", data=my_data)
+
+# Specify output directory
+pdf_path = plot.compile_to_pdf("my_plot.tex", output_dir="/tmp")
+```
+
+**Requirements for PDF compilation:**
+- `pdflatex` must be installed on your system
+- Install a LaTeX distribution:
+  - **Ubuntu/Debian**: `sudo apt-get install texlive-latex-base texlive-pictures`
+  - **macOS**: `brew install --cask mactex`
+  - **Windows**: Download [MiKTeX](https://miktex.org/) or [TeX Live](https://www.tug.org/texlive/)
+
+---
+
 ## Quick Reference
 
 ### Specs

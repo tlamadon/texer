@@ -83,7 +83,11 @@ class Coordinates:
 
         # Handle x, y, z arrays
         if self.x is not None:
-            points = self._arrays_to_points()
+            # Resolve x, y, z if they are Specs
+            x_resolved = resolve_value(self.x, data, scope)
+            y_resolved = resolve_value(self.y, data, scope)
+            z_resolved = resolve_value(self.z, data, scope) if self.z is not None else None
+            points = self._arrays_to_points_resolved(x_resolved, y_resolved, z_resolved)
         # Resolve the source
         elif isinstance(self.source, (Iter, Spec)):
             points = self.source.resolve(data, scope)
@@ -101,14 +105,14 @@ class Coordinates:
 
         return "coordinates {" + " ".join(coord_strs) + "}"
 
-    def _arrays_to_points(self) -> list[tuple[Any, ...]]:
-        """Convert x, y, z arrays to list of tuples."""
+    def _arrays_to_points_resolved(self, x: Any, y: Any, z: Any = None) -> list[tuple[Any, ...]]:
+        """Convert resolved x, y, z arrays to list of tuples."""
         # Convert to lists if numpy arrays
-        x_list = self._to_list(self.x)
-        y_list = self._to_list(self.y)
+        x_list = self._to_list(x)
+        y_list = self._to_list(y)
 
-        if self.z is not None:
-            z_list = self._to_list(self.z)
+        if z is not None:
+            z_list = self._to_list(z)
             if not (len(x_list) == len(y_list) == len(z_list)):
                 raise ValueError(f"x, y, and z must have the same length (got {len(x_list)}, {len(y_list)}, {len(z_list)})")
             return list(zip(x_list, y_list, z_list))
@@ -152,22 +156,22 @@ class AddPlot:
     coords: Coordinates | None = None
 
     # Expression-based plot
-    expression: str | None = None
-    domain: str | None = None
-    samples: int | None = None
+    expression: str | Spec | None = None
+    domain: str | Spec | None = None
+    samples: int | Spec | None = None
 
     # Style options
-    color: ColorName | str | None = None
-    mark: MarkStyle | str | None = None
-    style: LineStyle | str | None = None
-    line_width: str | None = None
-    only_marks: bool = False
-    no_marks: bool = False
-    smooth: bool = False
-    thick: bool = False
+    color: ColorName | str | Spec | None = None
+    mark: MarkStyle | str | Spec | None = None
+    style: LineStyle | str | Spec | None = None
+    line_width: str | Spec | None = None
+    only_marks: bool | Spec = False
+    no_marks: bool | Spec = False
+    smooth: bool | Spec = False
+    thick: bool | Spec = False
 
     # Plot name for legend
-    name: str | None = None
+    name: str | Spec | None = None
 
     # 3D options
     surf: bool = False
@@ -187,14 +191,15 @@ class AddPlot:
 
         parts = []
 
-        # Build options
+        # Build options (resolve Specs like Ref)
         options = {}
         if self.color:
-            options["color"] = self.color
+            options["color"] = resolve_value(self.color, data, scope)
         if self.mark:
-            options["mark"] = self.mark
+            options["mark"] = resolve_value(self.mark, data, scope)
         if self.style:
-            options[self.style] = True
+            resolved_style = resolve_value(self.style, data, scope)
+            options[resolved_style] = True
         if self.line_width:
             options["line width"] = self.line_width
         if self.only_marks:
@@ -245,7 +250,7 @@ class Legend:
         Legend([Ref("legend_label")])
     """
 
-    entries: list[Any]
+    entries: list[Any] | Iter | Spec
 
     def render(self, data: Any, scope: dict[str, Any] | None = None) -> str:
         """Render legend command."""
@@ -254,8 +259,11 @@ class Legend:
 
         from texer.eval import _evaluate_impl
 
+        # Resolve entries if it's a Spec (like Iter)
+        entries = resolve_value(self.entries, data, scope)
+
         resolved = []
-        for entry in self.entries:
+        for entry in entries:
             resolved.append(_evaluate_impl(entry, data, scope, escape=False))
 
         return "\\legend{" + ", ".join(resolved) + "}"
@@ -274,7 +282,7 @@ class Axis:
         )
     """
 
-    plots: list[AddPlot] = field(default_factory=list)
+    plots: list[AddPlot] | Iter | Spec = field(default_factory=list)
 
     # Axis labels
     xlabel: str | Spec | None = None
@@ -283,32 +291,32 @@ class Axis:
     title: str | Spec | None = None
 
     # Axis limits
-    xmin: float | None = None
-    xmax: float | None = None
-    ymin: float | None = None
-    ymax: float | None = None
-    zmin: float | None = None
-    zmax: float | None = None
+    xmin: float | Spec | None = None
+    xmax: float | Spec | None = None
+    ymin: float | Spec | None = None
+    ymax: float | Spec | None = None
+    zmin: float | Spec | None = None
+    zmax: float | Spec | None = None
 
     # Legend
-    legend: list[Any] | Legend | None = None
-    legend_pos: LegendPos | str | None = None
-    legend_style: str | None = None
+    legend: list[Any] | Legend | Iter | Spec | None = None
+    legend_pos: LegendPos | str | Spec | None = None
+    legend_style: str | Spec | None = None
 
     # Grid
-    grid: GridStyle | bool | None = None
+    grid: GridStyle | bool | Spec | None = None
 
     # Axis type
     axis_type: Literal["axis", "semilogxaxis", "semilogyaxis", "loglogaxis"] = "axis"
 
     # Scale
-    width: str | None = None
-    height: str | None = None
+    width: str | Spec | None = None
+    height: str | Spec | None = None
 
     # Other common options
-    enlargelimits: bool | float | None = None
-    clip: bool | None = None
-    axis_lines: AxisLines | str | None = None
+    enlargelimits: bool | float | Spec | None = None
+    clip: bool | Spec | None = None
+    axis_lines: AxisLines | str | Spec | None = None
 
     # Raw options escape hatch
     _raw_options: str | None = None
@@ -333,45 +341,46 @@ class Axis:
         if self.title is not None:
             options["title"] = _evaluate_impl(self.title, data, scope, escape=False)
 
-        # Limits
+        # Limits (resolve if Spec)
         if self.xmin is not None:
-            options["xmin"] = self.xmin
+            options["xmin"] = resolve_value(self.xmin, data, scope)
         if self.xmax is not None:
-            options["xmax"] = self.xmax
+            options["xmax"] = resolve_value(self.xmax, data, scope)
         if self.ymin is not None:
-            options["ymin"] = self.ymin
+            options["ymin"] = resolve_value(self.ymin, data, scope)
         if self.ymax is not None:
-            options["ymax"] = self.ymax
+            options["ymax"] = resolve_value(self.ymax, data, scope)
         if self.zmin is not None:
-            options["zmin"] = self.zmin
+            options["zmin"] = resolve_value(self.zmin, data, scope)
         if self.zmax is not None:
-            options["zmax"] = self.zmax
+            options["zmax"] = resolve_value(self.zmax, data, scope)
 
-        # Legend position
+        # Legend position (resolve if Spec)
         if self.legend_pos is not None:
-            options["legend pos"] = self.legend_pos
+            options["legend pos"] = resolve_value(self.legend_pos, data, scope)
         if self.legend_style is not None:
-            options["legend style"] = self.legend_style
+            options["legend style"] = resolve_value(self.legend_style, data, scope)
 
-        # Grid
-        if self.grid is True:
+        # Grid (resolve if Spec)
+        grid_value = resolve_value(self.grid, data, scope) if isinstance(self.grid, Spec) else self.grid
+        if grid_value is True:
             options["grid"] = "major"
-        elif self.grid:
-            options["grid"] = self.grid
+        elif grid_value:
+            options["grid"] = grid_value
 
-        # Dimensions
+        # Dimensions (resolve if Spec)
         if self.width is not None:
-            options["width"] = self.width
+            options["width"] = resolve_value(self.width, data, scope)
         if self.height is not None:
-            options["height"] = self.height
+            options["height"] = resolve_value(self.height, data, scope)
 
-        # Other options
+        # Other options (resolve if Spec)
         if self.enlargelimits is not None:
-            options["enlargelimits"] = self.enlargelimits
+            options["enlargelimits"] = resolve_value(self.enlargelimits, data, scope)
         if self.clip is not None:
-            options["clip"] = self.clip
+            options["clip"] = resolve_value(self.clip, data, scope)
         if self.axis_lines is not None:
-            options["axis lines"] = self.axis_lines
+            options["axis lines"] = resolve_value(self.axis_lines, data, scope)
 
         # Format options
         opts_str = format_options(options, self._raw_options)
@@ -384,9 +393,28 @@ class Axis:
         else:
             lines.append(f"\\begin{{{self.axis_type}}}")
 
-        # Plots
-        for plot in self.plots:
-            lines.append(f"  {plot.render(data, scope)}")
+        # Plots (handle Iter specially to preserve scope)
+        if isinstance(self.plots, Iter):
+            # Resolve the Iter source to get items
+            if isinstance(self.plots.source, str):
+                import glom
+                items = glom.glom(data, self.plots.source)
+            else:
+                items = self.plots.source.resolve(data, scope)
+
+            # For each item, create updated scope and render template
+            for item in items:
+                item_scope = dict(scope) if scope else {}
+                if isinstance(item, dict):
+                    item_scope.update(item)
+                # Resolve and render the template with the item scope
+                plot = resolve_value(self.plots.template, item, item_scope)
+                lines.append(f"  {plot.render(data, item_scope)}")
+        else:
+            # Regular list of plots
+            plots = resolve_value(self.plots, data, scope)
+            for plot in plots:
+                lines.append(f"  {plot.render(data, scope)}")
 
         # Legend
         if self.legend is not None:
@@ -414,7 +442,7 @@ class NextGroupPlot:
         )
     """
 
-    plots: list[AddPlot] = field(default_factory=list)
+    plots: list[AddPlot] | Iter | Spec = field(default_factory=list)
 
     # Axis labels
     xlabel: str | Spec | None = None
@@ -423,25 +451,25 @@ class NextGroupPlot:
     title: str | Spec | None = None
 
     # Axis limits
-    xmin: float | None = None
-    xmax: float | None = None
-    ymin: float | None = None
-    ymax: float | None = None
-    zmin: float | None = None
-    zmax: float | None = None
+    xmin: float | Spec | None = None
+    xmax: float | Spec | None = None
+    ymin: float | Spec | None = None
+    ymax: float | Spec | None = None
+    zmin: float | Spec | None = None
+    zmax: float | Spec | None = None
 
     # Legend
-    legend: list[Any] | Legend | None = None
-    legend_pos: LegendPos | str | None = None
-    legend_style: str | None = None
+    legend: list[Any] | Legend | Iter | Spec | None = None
+    legend_pos: LegendPos | str | Spec | None = None
+    legend_style: str | Spec | None = None
 
     # Grid
-    grid: GridStyle | bool | None = None
+    grid: GridStyle | bool | Spec | None = None
 
     # Other options
-    enlargelimits: bool | float | None = None
-    clip: bool | None = None
-    axis_lines: AxisLines | str | None = None
+    enlargelimits: bool | float | Spec | None = None
+    clip: bool | Spec | None = None
+    axis_lines: AxisLines | str | Spec | None = None
 
     # Raw options escape hatch
     _raw_options: str | None = None
@@ -466,39 +494,40 @@ class NextGroupPlot:
         if self.title is not None:
             options["title"] = _evaluate_impl(self.title, data, scope, escape=False)
 
-        # Limits
+        # Limits (resolve if Spec)
         if self.xmin is not None:
-            options["xmin"] = self.xmin
+            options["xmin"] = resolve_value(self.xmin, data, scope)
         if self.xmax is not None:
-            options["xmax"] = self.xmax
+            options["xmax"] = resolve_value(self.xmax, data, scope)
         if self.ymin is not None:
-            options["ymin"] = self.ymin
+            options["ymin"] = resolve_value(self.ymin, data, scope)
         if self.ymax is not None:
-            options["ymax"] = self.ymax
+            options["ymax"] = resolve_value(self.ymax, data, scope)
         if self.zmin is not None:
-            options["zmin"] = self.zmin
+            options["zmin"] = resolve_value(self.zmin, data, scope)
         if self.zmax is not None:
-            options["zmax"] = self.zmax
+            options["zmax"] = resolve_value(self.zmax, data, scope)
 
-        # Legend position
+        # Legend position (resolve if Spec)
         if self.legend_pos is not None:
-            options["legend pos"] = self.legend_pos
+            options["legend pos"] = resolve_value(self.legend_pos, data, scope)
         if self.legend_style is not None:
-            options["legend style"] = self.legend_style
+            options["legend style"] = resolve_value(self.legend_style, data, scope)
 
-        # Grid
-        if self.grid is True:
+        # Grid (resolve if Spec)
+        grid_value = resolve_value(self.grid, data, scope) if isinstance(self.grid, Spec) else self.grid
+        if grid_value is True:
             options["grid"] = "major"
-        elif self.grid:
-            options["grid"] = self.grid
+        elif grid_value:
+            options["grid"] = grid_value
 
-        # Other options
+        # Other options (resolve if Spec)
         if self.enlargelimits is not None:
-            options["enlargelimits"] = self.enlargelimits
+            options["enlargelimits"] = resolve_value(self.enlargelimits, data, scope)
         if self.clip is not None:
-            options["clip"] = self.clip
+            options["clip"] = resolve_value(self.clip, data, scope)
         if self.axis_lines is not None:
-            options["axis lines"] = self.axis_lines
+            options["axis lines"] = resolve_value(self.axis_lines, data, scope)
 
         # Format options
         opts_str = format_options(options, self._raw_options)
@@ -511,9 +540,28 @@ class NextGroupPlot:
         else:
             lines.append("\\nextgroupplot")
 
-        # Plots
-        for plot in self.plots:
-            lines.append(f"  {plot.render(data, scope)}")
+        # Plots (handle Iter specially to preserve scope)
+        if isinstance(self.plots, Iter):
+            # Resolve the Iter source to get items
+            if isinstance(self.plots.source, str):
+                import glom
+                items = glom.glom(data, self.plots.source)
+            else:
+                items = self.plots.source.resolve(data, scope)
+
+            # For each item, create updated scope and render template
+            for item in items:
+                item_scope = dict(scope) if scope else {}
+                if isinstance(item, dict):
+                    item_scope.update(item)
+                # Resolve and render the template with the item scope
+                plot = resolve_value(self.plots.template, item, item_scope)
+                lines.append(f"  {plot.render(data, item_scope)}")
+        else:
+            # Regular list of plots
+            plots = resolve_value(self.plots, data, scope)
+            for plot in plots:
+                lines.append(f"  {plot.render(data, scope)}")
 
         # Legend
         if self.legend is not None:
@@ -542,24 +590,24 @@ class GroupPlot:
         )
     """
 
-    plots: list[NextGroupPlot] = field(default_factory=list)
+    plots: list[NextGroupPlot] | Iter | Spec = field(default_factory=list)
 
     # Group style options
-    group_size: str | None = None  # e.g., "2 by 2"
-    horizontal_sep: str | None = None
-    vertical_sep: str | None = None
-    xlabels_at: str | None = None  # e.g., "edge bottom"
-    ylabels_at: str | None = None  # e.g., "edge left"
-    xticklabels_at: str | None = None
-    yticklabels_at: str | None = None
+    group_size: str | Spec | None = None  # e.g., "2 by 2"
+    horizontal_sep: str | Spec | None = None
+    vertical_sep: str | Spec | None = None
+    xlabels_at: str | Spec | None = None  # e.g., "edge bottom"
+    ylabels_at: str | Spec | None = None  # e.g., "edge left"
+    xticklabels_at: str | Spec | None = None
+    yticklabels_at: str | Spec | None = None
 
     # Common axis options (applied to all subplots)
-    width: str | None = None
-    height: str | None = None
-    xmin: float | None = None
-    xmax: float | None = None
-    ymin: float | None = None
-    ymax: float | None = None
+    width: str | Spec | None = None
+    height: str | Spec | None = None
+    xmin: float | Spec | None = None
+    xmax: float | Spec | None = None
+    ymin: float | Spec | None = None
+    ymax: float | Spec | None = None
 
     # Raw options escape hatch
     _raw_options: str | None = None
@@ -570,22 +618,22 @@ class GroupPlot:
         if scope is None:
             scope = {}
 
-        # Build group style options
+        # Build group style options (resolve if Spec)
         group_style_opts = {}
         if self.group_size is not None:
-            group_style_opts["group size"] = self.group_size
+            group_style_opts["group size"] = resolve_value(self.group_size, data, scope)
         if self.horizontal_sep is not None:
-            group_style_opts["horizontal sep"] = self.horizontal_sep
+            group_style_opts["horizontal sep"] = resolve_value(self.horizontal_sep, data, scope)
         if self.vertical_sep is not None:
-            group_style_opts["vertical sep"] = self.vertical_sep
+            group_style_opts["vertical sep"] = resolve_value(self.vertical_sep, data, scope)
         if self.xlabels_at is not None:
-            group_style_opts["xlabels at"] = self.xlabels_at
+            group_style_opts["xlabels at"] = resolve_value(self.xlabels_at, data, scope)
         if self.ylabels_at is not None:
-            group_style_opts["ylabels at"] = self.ylabels_at
+            group_style_opts["ylabels at"] = resolve_value(self.ylabels_at, data, scope)
         if self.xticklabels_at is not None:
-            group_style_opts["xticklabels at"] = self.xticklabels_at
+            group_style_opts["xticklabels at"] = resolve_value(self.xticklabels_at, data, scope)
         if self.yticklabels_at is not None:
-            group_style_opts["yticklabels at"] = self.yticklabels_at
+            group_style_opts["yticklabels at"] = resolve_value(self.yticklabels_at, data, scope)
 
         # Build main options
         options = {}
@@ -595,19 +643,19 @@ class GroupPlot:
         if group_style_str:
             options["group style"] = f"{{{group_style_str}}}"
 
-        # Common options
+        # Common options (resolve if Spec)
         if self.width is not None:
-            options["width"] = self.width
+            options["width"] = resolve_value(self.width, data, scope)
         if self.height is not None:
-            options["height"] = self.height
+            options["height"] = resolve_value(self.height, data, scope)
         if self.xmin is not None:
-            options["xmin"] = self.xmin
+            options["xmin"] = resolve_value(self.xmin, data, scope)
         if self.xmax is not None:
-            options["xmax"] = self.xmax
+            options["xmax"] = resolve_value(self.xmax, data, scope)
         if self.ymin is not None:
-            options["ymin"] = self.ymin
+            options["ymin"] = resolve_value(self.ymin, data, scope)
         if self.ymax is not None:
-            options["ymax"] = self.ymax
+            options["ymax"] = resolve_value(self.ymax, data, scope)
 
         # Format options
         opts_str = format_options(options, self._raw_options)
@@ -620,8 +668,9 @@ class GroupPlot:
         else:
             lines.append("\\begin{groupplot}")
 
-        # Render each plot
-        for plot in self.plots:
+        # Render each plot (resolve if Spec)
+        plots = resolve_value(self.plots, data, scope)
+        for plot in plots:
             plot_lines = plot.render(data, scope)
             for line in plot_lines.split("\n"):
                 lines.append(f"  {line}" if line else line)
@@ -660,7 +709,7 @@ class PGFPlot:
 
     axis: Axis | GroupPlot
     preamble: list[str] = field(default_factory=list)
-    scale: float | None = None
+    scale: float | Spec | None = None
     _raw_options: str | None = None
 
     def render(self, data: Any, scope: dict[str, Any] | None = None) -> str:
@@ -711,6 +760,111 @@ class PGFPlot:
         closing = ["\\end{document}"]
 
         return "\n".join(preamble + [content] + closing)
+
+    def save_to_file(
+        self,
+        file_path: str,
+        data: Any = None,
+        with_preamble: bool = True,
+    ) -> None:
+        """Save the LaTeX code to a file.
+
+        Args:
+            file_path: Path to the output .tex file.
+            data: Optional data dict for rendering (default: empty dict).
+            with_preamble: Whether to include document preamble for standalone compilation (default: True).
+
+        Examples:
+            # Save with preamble for standalone compilation
+            plot.save_to_file("my_plot.tex")
+
+            # Save just the tikzpicture content
+            plot.save_to_file("my_plot.tex", with_preamble=False)
+
+            # Save with data
+            plot.save_to_file("my_plot.tex", data=my_data)
+        """
+        if data is None:
+            data = {}
+
+        if with_preamble:
+            latex_code = self.with_preamble()
+        else:
+            latex_code = self.render(data)
+
+        with open(file_path, "w", encoding="utf-8") as f:
+            f.write(latex_code)
+
+    def compile_to_pdf(
+        self,
+        tex_file_path: str,
+        data: Any = None,
+        output_dir: str | None = None,
+    ) -> str:
+        """Save to .tex file and compile to PDF using pdflatex.
+
+        Args:
+            tex_file_path: Path to save the .tex file (e.g., "my_plot.tex").
+            data: Optional data dict for rendering (default: empty dict).
+            output_dir: Optional output directory for compilation (default: same as .tex file).
+
+        Returns:
+            Path to the generated PDF file.
+
+        Raises:
+            RuntimeError: If pdflatex is not available or compilation fails.
+
+        Examples:
+            # Simple compilation
+            pdf_path = plot.compile_to_pdf("my_plot.tex")
+
+            # With data
+            pdf_path = plot.compile_to_pdf("my_plot.tex", data=my_data)
+
+            # Specify output directory
+            pdf_path = plot.compile_to_pdf("my_plot.tex", output_dir="/tmp")
+        """
+        import subprocess
+        import shutil
+        from pathlib import Path
+
+        # Check if pdflatex is available
+        if shutil.which("pdflatex") is None:
+            raise RuntimeError(
+                "pdflatex not found. Please install a LaTeX distribution (e.g., TeX Live, MiKTeX)."
+            )
+
+        # Save to file
+        self.save_to_file(tex_file_path, data=data, with_preamble=True)
+
+        # Determine paths
+        tex_path = Path(tex_file_path).resolve()
+        if output_dir is None:
+            output_dir = tex_path.parent
+        else:
+            output_dir = Path(output_dir).resolve()
+
+        # Run pdflatex
+        try:
+            result = subprocess.run(
+                [
+                    "pdflatex",
+                    "-interaction=nonstopmode",
+                    f"-output-directory={output_dir}",
+                    str(tex_path),
+                ],
+                capture_output=True,
+                text=True,
+                check=True,
+            )
+        except subprocess.CalledProcessError as e:
+            raise RuntimeError(
+                f"pdflatex compilation failed:\n{e.stderr}\n\nOutput:\n{e.stdout}"
+            ) from e
+
+        # Return path to PDF
+        pdf_path = output_dir / tex_path.with_suffix(".pdf").name
+        return str(pdf_path)
 
 
 # Convenience classes for specialized axis types

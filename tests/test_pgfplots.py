@@ -216,6 +216,90 @@ class TestPGFPlot:
         assert "\\begin{document}" in result
         assert "\\end{document}" in result
 
+    def test_save_to_file(self):
+        """Test saving LaTeX code to a file."""
+        import tempfile
+        import os
+
+        plot = PGFPlot(
+            Axis(
+                xlabel="X",
+                ylabel="Y",
+                plots=[AddPlot(coords=Coordinates([(0, 1), (1, 2)]))],
+            )
+        )
+
+        # Test with preamble (default)
+        with tempfile.TemporaryDirectory() as tmpdir:
+            file_path = os.path.join(tmpdir, "test_plot.tex")
+            plot.save_to_file(file_path)
+
+            # Check file was created
+            assert os.path.exists(file_path)
+
+            # Check content includes preamble
+            with open(file_path, "r") as f:
+                content = f.read()
+            assert "\\documentclass{standalone}" in content
+            assert "\\begin{tikzpicture}" in content
+            assert "coordinates {(0, 1) (1, 2)}" in content
+
+        # Test without preamble
+        with tempfile.TemporaryDirectory() as tmpdir:
+            file_path = os.path.join(tmpdir, "test_plot_no_preamble.tex")
+            plot.save_to_file(file_path, with_preamble=False)
+
+            with open(file_path, "r") as f:
+                content = f.read()
+            assert "\\documentclass{standalone}" not in content
+            assert "\\begin{tikzpicture}" in content
+
+    def test_spec_types_in_options(self):
+        """Test that Ref and other Spec types work in AddPlot and Axis options."""
+        plot = PGFPlot(
+            Axis(
+                xlabel=Ref("xlabel"),
+                ylabel=Ref("ylabel"),
+                xmin=Ref("xmin"),
+                xmax=Ref("xmax"),
+                legend_pos=Ref("legend_pos"),
+                grid=Ref("grid"),
+                plots=[
+                    AddPlot(
+                        color=Ref("color"),
+                        mark=Ref("mark"),
+                        style=Ref("style"),
+                        coords=Coordinates([(0, 1), (1, 2)]),
+                    )
+                ],
+            )
+        )
+
+        data = {
+            "xlabel": "Time",
+            "ylabel": "Value",
+            "xmin": 0.0,
+            "xmax": 2.0,
+            "legend_pos": "north east",
+            "grid": "major",
+            "color": "blue",
+            "mark": "*",
+            "style": "dashed",
+        }
+
+        result = plot.render(data)
+
+        # Check that values were resolved from data
+        assert "xlabel=Time" in result
+        assert "ylabel=Value" in result
+        assert "xmin=0.0" in result
+        assert "xmax=2.0" in result
+        assert "legend pos={north east}" in result
+        assert "grid=major" in result
+        assert "color=blue" in result
+        assert "mark=*" in result
+        assert "dashed" in result
+
 
 class TestDynamicPlot:
     def test_plot_from_data(self):
@@ -440,3 +524,122 @@ class TestGroupPlot:
         assert "\\usepgfplotslibrary{groupplots}" in result
         assert "\\documentclass{standalone}" in result
         assert "\\usepackage{pgfplots}" in result
+
+    def test_iter_for_multiple_plots(self):
+        """Test using Iter to dynamically generate multiple plots from data."""
+        plot = PGFPlot(
+            Axis(
+                xlabel=Ref("x_label"),
+                ylabel=Ref("y_label"),
+                legend_pos="north west",
+                plots=Iter(
+                    Ref("series"),
+                    template=AddPlot(
+                        color=Ref("color"),
+                        mark=Ref("marker"),
+                        coords=Coordinates(
+                            Iter(Ref("data"), x=Ref("t"), y=Ref("value"))
+                        ),
+                    )
+                ),
+                legend=Iter(Ref("series"), template=Ref("name")),
+            )
+        )
+
+        data = {
+            "x_label": "Time (h)",
+            "y_label": "Temperature (°C)",
+            "series": [
+                {
+                    "name": "Sensor 1",
+                    "color": "blue",
+                    "marker": "*",
+                    "data": [{"t": 0, "value": 20.5}, {"t": 1, "value": 22.3}],
+                },
+                {
+                    "name": "Sensor 2",
+                    "color": "red",
+                    "marker": "square*",
+                    "data": [{"t": 0, "value": 19.8}, {"t": 1, "value": 21.5}],
+                },
+            ],
+        }
+
+        result = plot.render(data)
+
+        # Check that both series are present with correct colors and markers
+        assert "color=blue" in result
+        assert "mark=*" in result
+        assert "color=red" in result
+        assert "mark=square*" in result
+
+        # Check that coordinates are correct
+        assert "coordinates {(0, 20.5) (1, 22.3)}" in result
+        assert "coordinates {(0, 19.8) (1, 21.5)}" in result
+
+        # Check legend
+        assert "\\legend{Sensor 1, Sensor 2}" in result
+
+    def test_iter_with_root_level_refs(self):
+        """Test that Iter can reference both local and root-level data."""
+        plot = PGFPlot(
+            Axis(
+                xlabel=Ref("shared_xlabel"),  # From root
+                ylabel=Ref("shared_ylabel"),  # From root
+                title=Ref("title"),           # From root
+                plots=Iter(
+                    Ref("experiments"),
+                    template=AddPlot(
+                        color=Ref("color"),     # From current experiment
+                        mark=Ref("marker"),     # From current experiment
+                        coords=Coordinates(x=Ref("x"), y=Ref("y")),  # From current experiment
+                    )
+                ),
+                legend=Iter(Ref("experiments"), template=Ref("name")),  # From each experiment
+            )
+        )
+
+        data = {
+            # Root-level shared configuration
+            "title": "All Experiments",
+            "shared_xlabel": "Time (s)",
+            "shared_ylabel": "Value",
+
+            # Per-experiment data
+            "experiments": [
+                {
+                    "name": "Exp 1",
+                    "color": "blue",
+                    "marker": "*",
+                    "x": [0, 1, 2],
+                    "y": [1, 2, 4],
+                },
+                {
+                    "name": "Exp 2",
+                    "color": "red",
+                    "marker": "square*",
+                    "x": [0, 1, 2],
+                    "y": [2, 3, 5],
+                },
+            ],
+        }
+
+        result = plot.render(data)
+
+        # Check root-level references worked
+        assert "xlabel={Time (s)}" in result
+        assert "ylabel=Value" in result
+        assert "title={All Experiments}" in result
+
+        # Check local references worked
+        assert "color=blue" in result
+        assert "mark=*" in result
+        assert "color=red" in result
+        assert "mark=square*" in result
+
+        # Check coordinates from local data
+        assert "coordinates {(0, 1) (1, 2) (2, 4)}" in result
+        assert "coordinates {(0, 2) (1, 3) (2, 5)}" in result
+
+        # Check legend
+        assert "\\legend{Exp 1, Exp 2}" in result
