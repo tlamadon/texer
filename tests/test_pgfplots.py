@@ -254,6 +254,25 @@ class TestPGFPlot:
             assert "\\documentclass{standalone}" not in content
             assert "\\begin{tikzpicture}" in content
 
+        # Test with data and preamble
+        plot_with_data = PGFPlot(
+            Axis(
+                xlabel=Ref("xlabel"),
+                ylabel=Ref("ylabel"),
+                plots=[AddPlot(coords=Coordinates([(0, 1), (1, 2)]))],
+            )
+        )
+        with tempfile.TemporaryDirectory() as tmpdir:
+            file_path = os.path.join(tmpdir, "test_plot_with_data.tex")
+            data = {"xlabel": "Time", "ylabel": "Value"}
+            plot_with_data.save_to_file(file_path, data=data, with_preamble=True)
+
+            with open(file_path, "r") as f:
+                content = f.read()
+            assert "\\documentclass{standalone}" in content
+            assert "xlabel=Time" in content
+            assert "ylabel=Value" in content
+
     def test_spec_types_in_options(self):
         """Test that Ref and other Spec types work in AddPlot and Axis options."""
         plot = PGFPlot(

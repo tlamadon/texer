@@ -92,7 +92,7 @@ class Coordinates:
         elif isinstance(self.source, (Iter, Spec)):
             points = self.source.resolve(data, scope)
         else:
-            points = self.source
+            points = self.source  # type: ignore[assignment]
 
         # Format coordinates
         coord_strs = []
@@ -126,7 +126,8 @@ class Coordinates:
         """Convert array-like to list, handling numpy arrays."""
         # Check if it's a numpy array
         if hasattr(arr, '__array__') or hasattr(arr, 'tolist'):
-            return arr.tolist()
+            result: list[Any] = arr.tolist()
+            return result
         # Already a list or tuple
         elif isinstance(arr, (list, tuple)):
             return list(arr)
@@ -397,7 +398,7 @@ class Axis:
         if isinstance(self.plots, Iter):
             # Resolve the Iter source to get items
             if isinstance(self.plots.source, str):
-                import glom
+                import glom  # type: ignore[import-untyped]
                 items = glom.glom(data, self.plots.source)
             else:
                 items = self.plots.source.resolve(data, scope)
@@ -746,8 +747,15 @@ class PGFPlot:
 
         return "\n".join(lines)
 
-    def with_preamble(self) -> str:
-        """Return LaTeX code including package imports for standalone use."""
+    def with_preamble(self, data: Any = None) -> str:
+        """Return LaTeX code including package imports for standalone use.
+
+        Args:
+            data: Optional data dict for rendering (default: empty dict).
+        """
+        if data is None:
+            data = {}
+
         preamble = [
             "\\documentclass{standalone}",
             "\\usepackage{pgfplots}",
@@ -756,7 +764,7 @@ class PGFPlot:
             "",
             "\\begin{document}",
         ]
-        content = self.render({})
+        content = self.render(data)
         closing = ["\\end{document}"]
 
         return "\n".join(preamble + [content] + closing)
@@ -788,7 +796,7 @@ class PGFPlot:
             data = {}
 
         if with_preamble:
-            latex_code = self.with_preamble()
+            latex_code = self.with_preamble(data)
         else:
             latex_code = self.render(data)
 
@@ -839,10 +847,11 @@ class PGFPlot:
 
         # Determine paths
         tex_path = Path(tex_file_path).resolve()
+        output_path: Path
         if output_dir is None:
-            output_dir = tex_path.parent
+            output_path = tex_path.parent
         else:
-            output_dir = Path(output_dir).resolve()
+            output_path = Path(output_dir).resolve()
 
         # Run pdflatex
         try:
@@ -850,7 +859,7 @@ class PGFPlot:
                 [
                     "pdflatex",
                     "-interaction=nonstopmode",
-                    f"-output-directory={output_dir}",
+                    f"-output-directory={output_path}",
                     str(tex_path),
                 ],
                 capture_output=True,
@@ -863,7 +872,7 @@ class PGFPlot:
             ) from e
 
         # Return path to PDF
-        pdf_path = output_dir / tex_path.with_suffix(".pdf").name
+        pdf_path = output_path / tex_path.with_suffix(".pdf").name
         return str(pdf_path)
 
 
@@ -872,21 +881,21 @@ class PGFPlot:
 class SemiLogXAxis(Axis):
     """A semi-logarithmic axis (log scale on x-axis)."""
 
-    axis_type: str = "semilogxaxis"
+    axis_type: Literal["axis", "semilogxaxis", "semilogyaxis", "loglogaxis"] = "semilogxaxis"
 
 
 @dataclass
 class SemiLogYAxis(Axis):
     """A semi-logarithmic axis (log scale on y-axis)."""
 
-    axis_type: str = "semilogyaxis"
+    axis_type: Literal["axis", "semilogxaxis", "semilogyaxis", "loglogaxis"] = "semilogyaxis"
 
 
 @dataclass
 class LogLogAxis(Axis):
     """A log-log axis (log scale on both axes)."""
 
-    axis_type: str = "loglogaxis"
+    axis_type: Literal["axis", "semilogxaxis", "semilogyaxis", "loglogaxis"] = "loglogaxis"
 
 
 # Helper for creating simple line plots
