@@ -23,6 +23,72 @@ class TestCoordinates:
         result = coords.render({})
         assert result == "coordinates {(0, 0, 1) (1, 1, 2)}"
 
+    def test_coordinates_from_lists(self):
+        """Test creating coordinates from separate x and y lists."""
+        coords = Coordinates(x=[0, 1, 2], y=[1, 2, 4])
+        result = coords.render({})
+        assert result == "coordinates {(0, 1) (1, 2) (2, 4)}"
+
+    def test_coordinates_from_lists_3d(self):
+        """Test creating 3D coordinates from separate x, y, z lists."""
+        coords = Coordinates(x=[0, 1], y=[0, 1], z=[1, 2])
+        result = coords.render({})
+        assert result == "coordinates {(0, 0, 1) (1, 1, 2)}"
+
+    def test_coordinates_from_numpy_arrays(self):
+        """Test creating coordinates from numpy arrays."""
+        try:
+            import numpy as np
+        except ImportError:
+            pytest.skip("NumPy not installed")
+
+        x = np.array([0, 1, 2])
+        y = np.array([1, 2, 4])
+        coords = Coordinates(x=x, y=y)
+        result = coords.render({})
+        assert result == "coordinates {(0, 1) (1, 2) (2, 4)}"
+
+    def test_coordinates_from_numpy_arrays_3d(self):
+        """Test creating 3D coordinates from numpy arrays."""
+        try:
+            import numpy as np
+        except ImportError:
+            pytest.skip("NumPy not installed")
+
+        x = np.array([0.0, 1.0, 2.0])
+        y = np.array([0.0, 1.0, 2.0])
+        z = np.array([1.0, 2.0, 3.0])
+        coords = Coordinates(x=x, y=y, z=z)
+        result = coords.render({})
+        assert result == "coordinates {(0.0, 0.0, 1.0) (1.0, 1.0, 2.0) (2.0, 2.0, 3.0)}"
+
+    def test_coordinates_validation_no_args(self):
+        """Test that Coordinates raises error if neither source nor x/y provided."""
+        with pytest.raises(ValueError, match="Either 'source' or 'x' and 'y' must be provided"):
+            Coordinates()
+
+    def test_coordinates_validation_both_args(self):
+        """Test that Coordinates raises error if both source and x/y provided."""
+        with pytest.raises(ValueError, match="Cannot specify both 'source' and 'x'/'y' parameters"):
+            Coordinates(source=[(0, 1)], x=[0], y=[1])
+
+    def test_coordinates_validation_x_without_y(self):
+        """Test that Coordinates raises error if x provided without y."""
+        with pytest.raises(ValueError, match="If 'x' is provided, 'y' must also be provided"):
+            Coordinates(x=[0, 1, 2])
+
+    def test_coordinates_validation_mismatched_lengths(self):
+        """Test that Coordinates raises error if x and y have different lengths."""
+        coords = Coordinates(x=[0, 1, 2], y=[1, 2])
+        with pytest.raises(ValueError, match="x and y must have the same length"):
+            coords.render({})
+
+    def test_coordinates_validation_mismatched_lengths_3d(self):
+        """Test that Coordinates raises error if x, y, z have different lengths."""
+        coords = Coordinates(x=[0, 1], y=[0, 1], z=[1])
+        with pytest.raises(ValueError, match="x, y, and z must have the same length"):
+            coords.render({})
+
 
 class TestAddPlot:
     def test_simple_addplot(self):

@@ -234,6 +234,7 @@ Row(MultiRow(2, "Category"), "Value 1", "Unit 1")
 
 Think of plots as nested structures:
 
+**Single Plot:**
 ```
 PGFPlot (tikzpicture wrapper)
 └── Axis (the coordinate system)
@@ -243,6 +244,18 @@ PGFPlot (tikzpicture wrapper)
     │       ├── Style (color, mark, line style)
     │       └── Data (Coordinates or expression)
     └── Legend
+```
+
+**Multiple Subplots (GroupPlot):**
+```
+PGFPlot (tikzpicture wrapper)
+└── GroupPlot (grid layout container)
+    ├── Group Options (size, spacing, label positioning)
+    └── Plots (list of NextGroupPlot)
+        └── NextGroupPlot (individual subplot)
+            ├── Options (xlabel, ylabel, title, ...)
+            ├── Plots (list of AddPlot)
+            └── Legend
 ```
 
 ### Basic Plot with Static Data
@@ -356,6 +369,61 @@ data = {
 print(evaluate(plot, data))
 ```
 
+### Using NumPy Arrays
+
+`Coordinates` supports direct creation from NumPy arrays (or plain Python lists) using separate `x` and `y` parameters:
+
+```python
+import numpy as np
+from texer import PGFPlot, Axis, AddPlot, Coordinates, evaluate
+
+# Generate data with NumPy
+x = np.linspace(0, 2*np.pi, 100)
+y1 = np.sin(x)
+y2 = np.cos(x)
+
+plot = PGFPlot(
+    Axis(
+        xlabel="$x$",
+        ylabel="$f(x)$",
+        grid=True,
+        legend_pos="south east",
+        plots=[
+            AddPlot(
+                color="blue",
+                thick=True,
+                no_marks=True,
+                coords=Coordinates(x=x, y=y1),  # Direct from NumPy arrays!
+            ),
+            AddPlot(
+                color="red",
+                thick=True,
+                no_marks=True,
+                style="dashed",
+                coords=Coordinates(x=x, y=y2),
+            ),
+        ],
+        legend=[r"$\sin(x)$", r"$\cos(x)$"],
+    )
+)
+
+print(evaluate(plot, {}))
+```
+
+This also works with plain Python lists:
+
+```python
+x = [0, 1, 2, 3, 4]
+y = [0, 1, 4, 9, 16]
+coords = Coordinates(x=x, y=y)
+```
+
+And for 3D coordinates:
+
+```python
+coords = Coordinates(x=[0, 1, 2], y=[0, 1, 2], z=[0, 1, 4])
+```
+
 ### Mathematical Expressions
 
 For function plots, use expressions instead of coordinates:
@@ -395,6 +463,96 @@ plot = PGFPlot(
 print(evaluate(plot, {}))
 ```
 
+### GroupPlots: Multiple Subplots
+
+Use `GroupPlot` to create multiple plots in a grid layout:
+
+```python
+from texer import PGFPlot, GroupPlot, NextGroupPlot, AddPlot, Coordinates, Ref, Iter, evaluate
+
+plot = PGFPlot(
+    GroupPlot(
+        group_size="2 by 2",  # 2x2 grid
+        width="5cm",
+        height="4cm",
+        horizontal_sep="1.5cm",
+        vertical_sep="1.5cm",
+        plots=[
+            NextGroupPlot(
+                title="Temperature",
+                xlabel="Time (s)",
+                ylabel="Temp (K)",
+                grid=True,
+                plots=[
+                    AddPlot(
+                        color="blue",
+                        mark="*",
+                        coords=Coordinates(
+                            Iter(Ref("temp_data"), x=Ref("t"), y=Ref("temp"))
+                        ),
+                    )
+                ],
+            ),
+            NextGroupPlot(
+                title="Pressure",
+                xlabel="Time (s)",
+                ylabel="Pressure (Pa)",
+                grid=True,
+                plots=[
+                    AddPlot(
+                        color="red",
+                        mark="square*",
+                        coords=Coordinates(
+                            Iter(Ref("pressure_data"), x=Ref("t"), y=Ref("p"))
+                        ),
+                    )
+                ],
+            ),
+            NextGroupPlot(
+                title="Volume",
+                plots=[...],
+            ),
+            NextGroupPlot(
+                title="Density",
+                plots=[...],
+            ),
+        ],
+    )
+)
+
+data = {
+    "temp_data": [{"t": 0, "temp": 300}, {"t": 1, "temp": 320}],
+    "pressure_data": [{"t": 0, "p": 101325}, {"t": 1, "p": 102000}],
+}
+
+print(evaluate(plot, data))
+```
+
+#### GroupPlot Options
+
+```python
+GroupPlot(
+    # Grid layout
+    group_size="2 by 2",  # "columns by rows"
+
+    # Spacing
+    horizontal_sep="1cm",
+    vertical_sep="1cm",
+
+    # Label positioning (to avoid repetition)
+    xlabels_at="edge bottom",  # only show x labels at bottom edge
+    ylabels_at="edge left",    # only show y labels at left edge
+
+    # Common options for all subplots
+    width="6cm",
+    height="4cm",
+    xmin=0, xmax=10,
+
+    # List of subplots
+    plots=[NextGroupPlot(...), NextGroupPlot(...), ...],
+)
+```
+
 ### Axis Options Reference
 
 ```python
@@ -432,9 +590,10 @@ Axis(
 
 ```python
 AddPlot(
-    # Data source (one of these)
-    coords=Coordinates([...]),
-    expression="x^2",
+    # Data source (choose one)
+    coords=Coordinates([...]),           # List of tuples
+    coords=Coordinates(x=[...], y=[...]),  # Separate arrays (NumPy or lists)
+    expression="x^2",                    # Mathematical expression
 
     # Expression options
     domain="0:10",
@@ -459,6 +618,24 @@ AddPlot(
     # Raw options escape hatch
     _raw_options="some option",
 )
+```
+
+### Coordinates Options
+
+```python
+# From list of tuples (original method)
+Coordinates([(0, 1), (1, 2), (2, 4)])
+
+# From separate x, y arrays (NumPy or lists)
+Coordinates(x=[0, 1, 2], y=[1, 2, 4])
+Coordinates(x=np.array([...]), y=np.array([...]))
+
+# 3D coordinates
+Coordinates([(0, 0, 1), (1, 1, 2)])
+Coordinates(x=[0, 1], y=[0, 1], z=[1, 2])
+
+# Dynamic from data
+Coordinates(Iter(Ref("points"), x=Ref("x"), y=Ref("y")))
 ```
 
 ---
@@ -523,7 +700,9 @@ Ref("x") != 5     # not equal
 | Class | Purpose |
 |-------|---------|
 | `PGFPlot` | tikzpicture wrapper |
-| `Axis` | Axis environment |
+| `Axis` | Axis environment (single plot) |
+| `GroupPlot` | Group of plots in a grid layout |
+| `NextGroupPlot` | Individual subplot within a GroupPlot |
 | `AddPlot` | A single plot/series |
 | `Coordinates` | Data points for a plot |
 | `Legend` | Legend entries |
@@ -546,6 +725,13 @@ For plots:
 ```latex
 \usepackage{pgfplots}
 \pgfplotsset{compat=1.18}
+```
+
+For groupplots (multiple subplots):
+```latex
+\usepackage{pgfplots}
+\pgfplotsset{compat=1.18}
+\usepgfplotslibrary{groupplots}
 ```
 
 For multirow cells:

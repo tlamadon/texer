@@ -3,10 +3,43 @@
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from typing import Any
+from typing import Any, Literal
 
 from texer.specs import Spec, Iter, resolve_value
 from texer.utils import format_options, indent
+
+# Type aliases for common PGF options
+MarkStyle = Literal[
+    "*", "x", "+", "-", "|", "o", "asterisk", "star",
+    "10-pointed star", "oplus", "oplus*", "otimes", "otimes*",
+    "square", "square*", "triangle", "triangle*",
+    "diamond", "diamond*", "pentagon", "pentagon*",
+    "Mercedes star", "Mercedes star flipped",
+    "halfcircle", "halfcircle*", "halfsquare*", "halfdiamond*"
+]
+
+LineStyle = Literal[
+    "solid", "dotted", "densely dotted", "loosely dotted",
+    "dashed", "densely dashed", "loosely dashed",
+    "dashdotted", "densely dashdotted", "loosely dashdotted",
+    "dashdotdotted", "densely dashdotdotted", "loosely dashdotdotted"
+]
+
+ColorName = Literal[
+    "red", "green", "blue", "cyan", "magenta", "yellow",
+    "black", "gray", "white", "darkgray", "lightgray",
+    "brown", "lime", "olive", "orange", "pink", "purple", "teal", "violet"
+]
+
+LegendPos = Literal[
+    "north west", "north east", "south west", "south east",
+    "north", "south", "east", "west",
+    "outer north east"
+]
+
+AxisLines = Literal["left", "center", "right", "box", "middle", "none"]
+
+GridStyle = Literal["major", "minor", "both", "none"]
 
 
 @dataclass
@@ -14,25 +47,45 @@ class Coordinates:
     """Coordinates for a plot.
 
     Examples:
-        # Static coordinates
+        # Static coordinates (list of tuples)
         Coordinates([(0, 1), (1, 2), (2, 4)])
 
-        # Dynamic coordinates from data
-        Coordinates(Iter(Ref("points"), x=Ref("x"), y=Ref("y")))
+        # From separate x, y arrays (numpy arrays or lists)
+        Coordinates(x=[0, 1, 2], y=[1, 2, 4])
+        Coordinates(x=np.array([0, 1, 2]), y=np.array([1, 2, 4]))
 
         # 3D coordinates
         Coordinates([(0, 0, 1), (1, 1, 2)])
+        Coordinates(x=[0, 1], y=[0, 1], z=[1, 2])
+
+        # Dynamic coordinates from data
+        Coordinates(Iter(Ref("points"), x=Ref("x"), y=Ref("y")))
     """
 
-    source: list[tuple[Any, ...]] | Iter | Spec
+    source: list[tuple[Any, ...]] | Iter | Spec | None = None
+    x: Any = None
+    y: Any = None
+    z: Any = None
+
+    def __post_init__(self) -> None:
+        """Validate that either source or x/y are provided."""
+        if self.source is None and self.x is None:
+            raise ValueError("Either 'source' or 'x' and 'y' must be provided")
+        if self.source is not None and (self.x is not None or self.y is not None):
+            raise ValueError("Cannot specify both 'source' and 'x'/'y' parameters")
+        if self.x is not None and self.y is None:
+            raise ValueError("If 'x' is provided, 'y' must also be provided")
 
     def render(self, data: Any, scope: dict[str, Any] | None = None) -> str:
         """Render coordinates to LaTeX."""
         if scope is None:
             scope = {}
 
+        # Handle x, y, z arrays
+        if self.x is not None:
+            points = self._arrays_to_points()
         # Resolve the source
-        if isinstance(self.source, (Iter, Spec)):
+        elif isinstance(self.source, (Iter, Spec)):
             points = self.source.resolve(data, scope)
         else:
             points = self.source
@@ -47,6 +100,34 @@ class Coordinates:
                 coord_strs.append(f"({point})")
 
         return "coordinates {" + " ".join(coord_strs) + "}"
+
+    def _arrays_to_points(self) -> list[tuple[Any, ...]]:
+        """Convert x, y, z arrays to list of tuples."""
+        # Convert to lists if numpy arrays
+        x_list = self._to_list(self.x)
+        y_list = self._to_list(self.y)
+
+        if self.z is not None:
+            z_list = self._to_list(self.z)
+            if not (len(x_list) == len(y_list) == len(z_list)):
+                raise ValueError(f"x, y, and z must have the same length (got {len(x_list)}, {len(y_list)}, {len(z_list)})")
+            return list(zip(x_list, y_list, z_list))
+        else:
+            if len(x_list) != len(y_list):
+                raise ValueError(f"x and y must have the same length (got {len(x_list)}, {len(y_list)})")
+            return list(zip(x_list, y_list))
+
+    @staticmethod
+    def _to_list(arr: Any) -> list[Any]:
+        """Convert array-like to list, handling numpy arrays."""
+        # Check if it's a numpy array
+        if hasattr(arr, '__array__') or hasattr(arr, 'tolist'):
+            return arr.tolist()
+        # Already a list or tuple
+        elif isinstance(arr, (list, tuple)):
+            return list(arr)
+        else:
+            raise TypeError(f"Expected array-like object, got {type(arr)}")
 
 
 @dataclass
@@ -76,9 +157,9 @@ class AddPlot:
     samples: int | None = None
 
     # Style options
-    color: str | None = None
-    mark: str | None = None
-    style: str | None = None
+    color: ColorName | str | None = None
+    mark: MarkStyle | str | None = None
+    style: LineStyle | str | None = None
     line_width: str | None = None
     only_marks: bool = False
     no_marks: bool = False
@@ -211,14 +292,14 @@ class Axis:
 
     # Legend
     legend: list[Any] | Legend | None = None
-    legend_pos: str | None = None
+    legend_pos: LegendPos | str | None = None
     legend_style: str | None = None
 
     # Grid
-    grid: str | bool | None = None  # "major", "minor", "both", True, False
+    grid: GridStyle | bool | None = None
 
     # Axis type
-    axis_type: str = "axis"  # "axis", "semilogxaxis", "semilogyaxis", "loglogaxis"
+    axis_type: Literal["axis", "semilogxaxis", "semilogyaxis", "loglogaxis"] = "axis"
 
     # Scale
     width: str | None = None
@@ -227,7 +308,7 @@ class Axis:
     # Other common options
     enlargelimits: bool | float | None = None
     clip: bool | None = None
-    axis_lines: str | None = None  # "left", "center", "right", "box"
+    axis_lines: AxisLines | str | None = None
 
     # Raw options escape hatch
     _raw_options: str | None = None
@@ -351,16 +432,16 @@ class NextGroupPlot:
 
     # Legend
     legend: list[Any] | Legend | None = None
-    legend_pos: str | None = None
+    legend_pos: LegendPos | str | None = None
     legend_style: str | None = None
 
     # Grid
-    grid: str | bool | None = None
+    grid: GridStyle | bool | None = None
 
     # Other options
     enlargelimits: bool | float | None = None
     clip: bool | None = None
-    axis_lines: str | None = None
+    axis_lines: AxisLines | str | None = None
 
     # Raw options escape hatch
     _raw_options: str | None = None

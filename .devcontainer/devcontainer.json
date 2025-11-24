@@ -1,12 +1,15 @@
 {
   "name": "texer",
   "image": "mcr.microsoft.com/devcontainers/python:3.11",
-  
+
   "features": {
     "ghcr.io/devcontainers/features/node:1": {},
-    "ghcr.io/anthropics/devcontainer-features/claude-code:1": {}
+    "ghcr.io/anthropics/devcontainer-features/claude-code:1": {},
+    "ghcr.io/rocker-org/devcontainer-features/apt-packages:1": {
+      "packages": "texlive-latex-extra,texlive-pictures,texlive-science,texlive-fonts-recommended,texlive-latex-recommended,poppler-utils"
+    }
   },
-  
+
   "customizations": {
     "vscode": {
       "extensions": [
@@ -28,8 +31,8 @@
       }
     }
   },
-  
+
   "postCreateCommand": "pip install -e '.[dev]'",
-  
+
   "remoteUser": "vscode"
 }
