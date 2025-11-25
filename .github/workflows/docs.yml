@@ -28,9 +28,18 @@ jobs:
           python-version: '3.11'
           cache: 'pip'
 
-      - name: Install dependencies
+      - name: Install LaTeX and ImageMagick
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y texlive-latex-base texlive-pictures imagemagick
+
+      - name: Install Python dependencies
         run: |
           pip install -e ".[docs]"
+
+      - name: Generate documentation images
+        run: |
+          python scripts/generate_doc_images.py
 
       - name: Build documentation
         run: |

@@ -2,6 +2,7 @@
 src/texer.egg-info
 .pypirc
 site/
+docs/assets/images/
 examples/trig_plot_content.tex
 examples/trig_plot.aux
 examples/trig_plot.log

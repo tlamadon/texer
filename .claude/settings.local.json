@@ -16,7 +16,8 @@
       "Bash(/workspaces/texer/.gitignore)",
       "Bash(fi)",
       "Bash(else)",
-      "Bash(cat:*)"
+      "Bash(cat:*)",
+      "Bash(/workspaces/texer/scripts/.gitignore)"
     ],
     "deny": [],
     "ask": []

@@ -46,6 +46,11 @@ print(evaluate(plot, {}))
 
 **Output:**
 
+![Basic plot example](../assets/images/plots/basic_plot.png)
+
+<details>
+<summary>LaTeX code</summary>
+
 ```latex
 \begin{tikzpicture}
   \begin{axis}[xlabel={Time (s)}, ylabel={Distance (m)}]
@@ -53,6 +58,7 @@ print(evaluate(plot, {}))
   \end{axis}
 \end{tikzpicture}
 ```
+</details>
 
 ## Understanding the Parts
 
@@ -253,6 +259,8 @@ plot = PGFPlot(
     )
 )
 ```
+
+![Multiple series example](../assets/images/plots/multiple_series.png)
 
 ### Legend Positions
 

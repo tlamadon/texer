@@ -27,6 +27,10 @@ table = Tabular(
 print(evaluate(table, {}))
 ```
 
+**Output:**
+
+![MultiColumn table example](../assets/images/tables/multicolumn_table.png)
+
 **Output structure**:
 ```
 Category | Measurements (spans 3 columns)

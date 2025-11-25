@@ -46,6 +46,11 @@ print(evaluate(table, {}))
 
 **Output:**
 
+![Basic table example](../assets/images/tables/basic_table.png)
+
+<details>
+<summary>LaTeX code</summary>
+
 ```latex
 \begin{table}[htbp]
   \centering
@@ -62,6 +67,7 @@ print(evaluate(table, {}))
   \end{tabular}
 \end{table}
 ```
+</details>
 
 ## Understanding the Parts
 
