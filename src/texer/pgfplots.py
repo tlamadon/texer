@@ -319,6 +319,10 @@ class Axis:
     clip: bool | Spec | None = None
     axis_lines: AxisLines | str | Spec | None = None
 
+    # Cycle list options
+    cycle_list_name: str | Spec | None = None
+    cycle_list: list[dict[str, Any]] | list[str] | Spec | None = None
+
     # Raw options escape hatch
     _raw_options: str | None = None
 
@@ -382,6 +386,23 @@ class Axis:
             options["clip"] = resolve_value(self.clip, data, scope)
         if self.axis_lines is not None:
             options["axis lines"] = resolve_value(self.axis_lines, data, scope)
+
+        # Cycle list options (resolve if Spec)
+        if self.cycle_list_name is not None:
+            options["cycle list name"] = resolve_value(self.cycle_list_name, data, scope)
+        elif self.cycle_list is not None:
+            cycle_list_resolved = resolve_value(self.cycle_list, data, scope)
+            # Format cycle list
+            cycle_entries = []
+            for entry in cycle_list_resolved:
+                if isinstance(entry, dict):
+                    # Format as key=value pairs wrapped in braces
+                    entry_str = format_options(entry, None)
+                    cycle_entries.append("{" + entry_str + "}")
+                else:
+                    # Plain string entry
+                    cycle_entries.append(str(entry))
+            options["cycle list"] = "{" + ",".join(cycle_entries) + "}"
 
         # Format options
         opts_str = format_options(options, self._raw_options)
@@ -472,6 +493,10 @@ class NextGroupPlot:
     clip: bool | Spec | None = None
     axis_lines: AxisLines | str | Spec | None = None
 
+    # Cycle list options
+    cycle_list_name: str | Spec | None = None
+    cycle_list: list[dict[str, Any]] | list[str] | Spec | None = None
+
     # Raw options escape hatch
     _raw_options: str | None = None
 
@@ -529,6 +554,23 @@ class NextGroupPlot:
             options["clip"] = resolve_value(self.clip, data, scope)
         if self.axis_lines is not None:
             options["axis lines"] = resolve_value(self.axis_lines, data, scope)
+
+        # Cycle list options (resolve if Spec)
+        if self.cycle_list_name is not None:
+            options["cycle list name"] = resolve_value(self.cycle_list_name, data, scope)
+        elif self.cycle_list is not None:
+            cycle_list_resolved = resolve_value(self.cycle_list, data, scope)
+            # Format cycle list
+            cycle_entries = []
+            for entry in cycle_list_resolved:
+                if isinstance(entry, dict):
+                    # Format as key=value pairs wrapped in braces
+                    entry_str = format_options(entry, None)
+                    cycle_entries.append("{" + entry_str + "}")
+                else:
+                    # Plain string entry
+                    cycle_entries.append(str(entry))
+            options["cycle list"] = "{" + ",".join(cycle_entries) + "}"
 
         # Format options
         opts_str = format_options(options, self._raw_options)
@@ -610,6 +652,10 @@ class GroupPlot:
     ymin: float | Spec | None = None
     ymax: float | Spec | None = None
 
+    # Cycle list options (applied to all subplots)
+    cycle_list_name: str | Spec | None = None
+    cycle_list: list[dict[str, Any]] | list[str] | Spec | None = None
+
     # Raw options escape hatch
     _raw_options: str | None = None
     _raw_group_style: str | None = None
@@ -657,6 +703,23 @@ class GroupPlot:
             options["ymin"] = resolve_value(self.ymin, data, scope)
         if self.ymax is not None:
             options["ymax"] = resolve_value(self.ymax, data, scope)
+
+        # Cycle list options (resolve if Spec)
+        if self.cycle_list_name is not None:
+            options["cycle list name"] = resolve_value(self.cycle_list_name, data, scope)
+        elif self.cycle_list is not None:
+            cycle_list_resolved = resolve_value(self.cycle_list, data, scope)
+            # Format cycle list
+            cycle_entries = []
+            for entry in cycle_list_resolved:
+                if isinstance(entry, dict):
+                    # Format as key=value pairs wrapped in braces
+                    entry_str = format_options(entry, None)
+                    cycle_entries.append("{" + entry_str + "}")
+                else:
+                    # Plain string entry
+                    cycle_entries.append(str(entry))
+            options["cycle list"] = "{" + ",".join(cycle_entries) + "}"
 
         # Format options
         opts_str = format_options(options, self._raw_options)

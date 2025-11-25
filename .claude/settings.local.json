@@ -8,7 +8,15 @@
       "Bash(python:*)",
       "Bash(pip index:*)",
       "Bash(twine check:*)",
-      "Bash(twine upload:*)"
+      "Bash(twine upload:*)",
+      "Bash(mkdocs build:*)",
+      "Bash(if [ -f /workspaces/texer/.gitignore ])",
+      "Bash(then)",
+      "Bash(if ! grep -q \"^site/$\" /workspaces/texer/.gitignore)",
+      "Bash(/workspaces/texer/.gitignore)",
+      "Bash(fi)",
+      "Bash(else)",
+      "Bash(cat:*)"
     ],
     "deny": [],
     "ask": []

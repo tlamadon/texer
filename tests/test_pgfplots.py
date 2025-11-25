@@ -662,3 +662,167 @@ class TestGroupPlot:
 
         # Check legend
         assert "\\legend{Exp 1, Exp 2}" in result
+
+
+class TestCycleList:
+    def test_cycle_list_name(self):
+        """Test using a predefined cycle list name."""
+        axis = Axis(
+            cycle_list_name="color list",
+            plots=[
+                AddPlot(coords=Coordinates([(0, 1), (1, 2)])),
+                AddPlot(coords=Coordinates([(0, 2), (1, 3)])),
+            ],
+        )
+        result = axis.render({})
+        assert "cycle list name={color list}" in result
+
+    def test_cycle_list_with_dicts(self):
+        """Test custom cycle list with dict entries."""
+        axis = Axis(
+            cycle_list=[
+                {"color": "blue", "mark": "*"},
+                {"color": "red", "mark": "square*"},
+                {"color": "green", "mark": "triangle*"},
+            ],
+            plots=[
+                AddPlot(coords=Coordinates([(0, 1), (1, 2)])),
+                AddPlot(coords=Coordinates([(0, 2), (1, 3)])),
+            ],
+        )
+        result = axis.render({})
+        assert "cycle list={" in result
+        assert "color=blue" in result
+        assert "mark=*" in result
+        assert "color=red" in result
+        assert "mark=square*" in result
+        assert "color=green" in result
+        assert "mark=triangle*" in result
+
+    def test_cycle_list_with_strings(self):
+        """Test custom cycle list with string entries."""
+        axis = Axis(
+            cycle_list=["blue", "red", "green"],
+            plots=[
+                AddPlot(coords=Coordinates([(0, 1), (1, 2)])),
+            ],
+        )
+        result = axis.render({})
+        assert "cycle list={{blue,red,green}}" in result
+
+    def test_cycle_list_with_ref(self):
+        """Test cycle list with dynamic data from Ref."""
+        axis = Axis(
+            cycle_list=Ref("colors"),
+            plots=[
+                AddPlot(coords=Coordinates([(0, 1), (1, 2)])),
+            ],
+        )
+        data = {
+            "colors": [
+                {"color": "blue", "mark": "*"},
+                {"color": "red", "mark": "square*"},
+            ]
+        }
+        result = axis.render(data)
+        assert "cycle list={" in result
+        assert "color=blue" in result
+        assert "mark=*" in result
+        assert "color=red" in result
+        assert "mark=square*" in result
+
+    def test_cycle_list_name_with_ref(self):
+        """Test cycle list name with dynamic data from Ref."""
+        axis = Axis(
+            cycle_list_name=Ref("cycle_name"),
+            plots=[
+                AddPlot(coords=Coordinates([(0, 1), (1, 2)])),
+            ],
+        )
+        data = {"cycle_name": "exotic"}
+        result = axis.render(data)
+        assert "cycle list name=exotic" in result
+
+    def test_cycle_list_in_nextgroupplot(self):
+        """Test cycle list in NextGroupPlot."""
+        plot = NextGroupPlot(
+            cycle_list=[
+                {"color": "blue", "mark": "*"},
+                {"color": "red", "mark": "square*"},
+            ],
+            plots=[
+                AddPlot(coords=Coordinates([(0, 1), (1, 2)])),
+                AddPlot(coords=Coordinates([(0, 2), (1, 3)])),
+            ],
+        )
+        result = plot.render({})
+        assert "cycle list={" in result
+        assert "color=blue" in result
+        assert "mark=*" in result
+
+    def test_cycle_list_in_groupplot(self):
+        """Test cycle list applied to all subplots in GroupPlot."""
+        groupplot = GroupPlot(
+            group_size="1 by 2",
+            cycle_list=[
+                {"color": "blue", "mark": "*"},
+                {"color": "red", "mark": "square*"},
+            ],
+            plots=[
+                NextGroupPlot(
+                    plots=[
+                        AddPlot(coords=Coordinates([(0, 1), (1, 2)])),
+                        AddPlot(coords=Coordinates([(0, 2), (1, 3)])),
+                    ]
+                ),
+                NextGroupPlot(
+                    plots=[
+                        AddPlot(coords=Coordinates([(0, 3), (1, 4)])),
+                    ]
+                ),
+            ],
+        )
+        result = groupplot.render({})
+        assert "cycle list={" in result
+        assert "color=blue" in result
+        assert "mark=*" in result
+        assert "color=red" in result
+        assert "mark=square*" in result
+
+    def test_cycle_list_name_priority(self):
+        """Test that cycle_list_name takes priority over cycle_list."""
+        axis = Axis(
+            cycle_list_name="color list",
+            cycle_list=["blue", "red"],  # Should be ignored
+            plots=[
+                AddPlot(coords=Coordinates([(0, 1), (1, 2)])),
+            ],
+        )
+        result = axis.render({})
+        assert "cycle list name={color list}" in result
+        assert "cycle list={blue,red}" not in result
+
+    def test_complete_plot_with_cycle_list(self):
+        """Test complete PGFPlot with cycle list."""
+        plot = PGFPlot(
+            Axis(
+                xlabel="X",
+                ylabel="Y",
+                cycle_list=[
+                    {"color": "blue", "mark": "*", "line width": "2pt"},
+                    {"color": "red", "mark": "square*", "line width": "2pt"},
+                ],
+                plots=[
+                    AddPlot(coords=Coordinates([(0, 0), (1, 1)])),
+                    AddPlot(coords=Coordinates([(0, 1), (1, 0)])),
+                ],
+            )
+        )
+        result = plot.render({})
+        assert "\\begin{tikzpicture}" in result
+        assert "\\begin{axis}" in result
+        assert "cycle list={" in result
+        assert "color=blue" in result
+        assert "line width=2pt" in result
+        assert "\\end{axis}" in result
+        assert "\\end{tikzpicture}" in result

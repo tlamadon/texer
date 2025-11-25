@@ -1,3 +1,9 @@
 **.pyc
 src/texer.egg-info
 .pypirc
+site/
+examples/trig_plot_content.tex
+examples/trig_plot.aux
+examples/trig_plot.log
+examples/trig_plot.pdf
+examples/trig_plot.tex
