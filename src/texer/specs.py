@@ -29,9 +29,9 @@ class Ref(Spec):
     """Reference to a data path using glom-style dot notation.
 
     Examples:
-        Ref("name")           -> data["name"]
-        Ref("user.email")     -> data["user"]["email"]
-        Ref("items.0.value")  -> data["items"][0]["value"]
+        `Ref("name")` -> `data["name"]`
+        `Ref("user.email")` -> `data["user"]["email"]`
+        `Ref("items.0.value")` -> `data["items"][0]["value"]`
     """
 
     path: str
