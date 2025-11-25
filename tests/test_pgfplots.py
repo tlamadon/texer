@@ -60,7 +60,8 @@ class TestCoordinates:
         z = np.array([1.0, 2.0, 3.0])
         coords = Coordinates(x=x, y=y, z=z)
         result = coords.render({})
-        assert result == "coordinates {(0.0, 0.0, 1.0) (1.0, 1.0, 2.0) (2.0, 2.0, 3.0)}"
+        # With default precision, trailing zeros are removed (e.g., 1.0 -> 1)
+        assert result == "coordinates {(0, 0, 1) (1, 1, 2) (2, 2, 3)}"
 
     def test_coordinates_validation_no_args(self):
         """Test that Coordinates raises error if neither source nor x/y provided."""
@@ -88,6 +89,42 @@ class TestCoordinates:
         coords = Coordinates(x=[0, 1], y=[0, 1], z=[1])
         with pytest.raises(ValueError, match="x, y, and z must have the same length"):
             coords.render({})
+
+    def test_coordinates_precision_default(self):
+        """Test default precision (6 significant figures)."""
+        coords = Coordinates(x=[0.123456789, 1.23456789], y=[0.987654321, 9.87654321])
+        result = coords.render({})
+        assert result == "coordinates {(0.123457, 0.987654) (1.23457, 9.87654)}"
+
+    def test_coordinates_precision_custom(self):
+        """Test custom precision (3 significant figures)."""
+        coords = Coordinates(x=[0.123456789, 1.23456789], y=[0.987654321, 9.87654321], precision=3)
+        result = coords.render({})
+        assert result == "coordinates {(0.123, 0.988) (1.23, 9.88)}"
+
+    def test_coordinates_precision_none(self):
+        """Test no rounding when precision=None."""
+        coords = Coordinates(x=[0.123456789, 1.23456789], y=[0.987654321, 9.87654321], precision=None)
+        result = coords.render({})
+        assert result == "coordinates {(0.123456789, 0.987654321) (1.23456789, 9.87654321)}"
+
+    def test_coordinates_precision_with_tuples(self):
+        """Test precision with tuple input."""
+        coords = Coordinates([(0.123456789, 0.987654321), (1.23456789, 9.87654321)])
+        result = coords.render({})
+        assert result == "coordinates {(0.123457, 0.987654) (1.23457, 9.87654)}"
+
+    def test_coordinates_precision_with_zeros(self):
+        """Test precision with zero values."""
+        coords = Coordinates(x=[0, 0.123456789, 0], y=[0, 0.987654321, 0])
+        result = coords.render({})
+        assert result == "coordinates {(0, 0) (0.123457, 0.987654) (0, 0)}"
+
+    def test_coordinates_precision_scientific_notation(self):
+        """Test precision with very small/large numbers."""
+        coords = Coordinates(x=[1e-6, 1e6], y=[1e-7, 1e7], precision=3)
+        result = coords.render({})
+        assert result == "coordinates {(1e-06, 1e-07) (1e+06, 1e+07)}"
 
 
 class TestAddPlot:

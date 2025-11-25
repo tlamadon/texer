@@ -60,12 +60,18 @@ class Coordinates:
 
         # Dynamic coordinates from data
         Coordinates(Iter(Ref("points"), x=Ref("x"), y=Ref("y")))
+
+        # Control precision (default 6 significant figures)
+        Coordinates(x=[0.123456789], y=[0.987654321])  # Outputs (0.123457, 0.987654)
+        Coordinates(x=[0.123456789], y=[0.987654321], precision=3)  # Outputs (0.123, 0.988)
+        Coordinates(x=[0.123456789], y=[0.987654321], precision=None)  # No rounding
     """
 
     source: list[tuple[Any, ...]] | Iter | Spec | None = None
     x: Any = None
     y: Any = None
     z: Any = None
+    precision: int | None = 6  # Number of significant figures (None = no rounding)
 
     def __post_init__(self) -> None:
         """Validate that either source or x/y are provided."""
@@ -98,10 +104,11 @@ class Coordinates:
         coord_strs = []
         for point in points:
             if isinstance(point, tuple):
-                coord_strs.append(f"({', '.join(str(v) for v in point)})")
+                formatted_values = [self._format_value(v) for v in point]
+                coord_strs.append(f"({', '.join(formatted_values)})")
             else:
                 # Single value (rare case)
-                coord_strs.append(f"({point})")
+                coord_strs.append(f"({self._format_value(point)})")
 
         return "coordinates {" + " ".join(coord_strs) + "}"
 
@@ -133,6 +140,27 @@ class Coordinates:
             return list(arr)
         else:
             raise TypeError(f"Expected array-like object, got {type(arr)}")
+
+    def _format_value(self, value: Any) -> str:
+        """Format a numeric value with specified precision."""
+        # If precision is None, no rounding
+        if self.precision is None:
+            return str(value)
+
+        # Try to format as float with significant figures
+        try:
+            val = float(value)
+            # Handle special cases
+            if val == 0:
+                return "0"
+
+            # Use the 'g' format specifier which uses significant figures
+            # and automatically switches between fixed and scientific notation
+            format_str = f"{{:.{self.precision}g}}"
+            return format_str.format(val)
+        except (ValueError, TypeError):
+            # Not a number, return as-is
+            return str(value)
 
 
 @dataclass
@@ -1003,6 +1031,7 @@ def simple_plot(
     title: str | None = None,
     color: str = "blue",
     mark: str = "*",
+    precision: int | None = 6,
 ) -> PGFPlot:
     """Create a simple line plot from x and y data.
 
@@ -1014,11 +1043,12 @@ def simple_plot(
         title: Optional plot title.
         color: Line/marker color.
         mark: Marker style.
+        precision: Number of significant figures for coordinates (default: 6, None for no rounding).
 
     Returns:
         A PGFPlot object ready for rendering.
     """
-    coords = Coordinates(list(zip(x, y)))
+    coords = Coordinates(list(zip(x, y)), precision=precision)
 
     return PGFPlot(
         Axis(
