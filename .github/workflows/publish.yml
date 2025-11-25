@@ -31,6 +31,11 @@ jobs:
           echo "Updated pyproject.toml with version $VERSION"
           grep "^version" pyproject.toml
 
+      - name: Install LaTeX
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y texlive-latex-base texlive-latex-extra texlive-pictures
+
       - name: Set up Python
         uses: actions/setup-python@v5
         with:

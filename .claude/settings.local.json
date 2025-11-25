@@ -17,7 +17,11 @@
       "Bash(fi)",
       "Bash(else)",
       "Bash(cat:*)",
-      "Bash(/workspaces/texer/scripts/.gitignore)"
+      "Bash(/workspaces/texer/scripts/.gitignore)",
+      "Bash(mypy:*)",
+      "Bash(if [ -f ~/.pypirc ])",
+      "Bash(then cat ~/.pypirc)",
+      "Bash(else echo \"No .pypirc file found\")"
     ],
     "deny": [],
     "ask": []
