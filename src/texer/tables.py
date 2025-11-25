@@ -202,7 +202,7 @@ class Tabular:
             # For Iter with a Row template, we need to handle specially
             # Get the source items
             if isinstance(self.rows.source, str):
-                import glom
+                import glom  # type: ignore[import-untyped]
                 items = glom.glom(data, self.rows.source)
             else:
                 items = self.rows.source.resolve(data, scope)

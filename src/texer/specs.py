@@ -6,7 +6,7 @@ from abc import ABC, abstractmethod
 from dataclasses import dataclass, field
 from typing import Any, Callable, Generic, TypeVar, Union
 
-import glom
+import glom  # type: ignore[import-untyped]
 
 T = TypeVar("T")
 U = TypeVar("U")
@@ -89,7 +89,7 @@ class Comparison(Spec):
         left_val = resolve_value(self.left, data, scope)
         right_val = resolve_value(self.right, data, scope)
 
-        ops = {
+        ops: dict[str, Any] = {
             ">": lambda a, b: a > b,
             "<": lambda a, b: a < b,
             ">=": lambda a, b: a >= b,
@@ -97,7 +97,7 @@ class Comparison(Spec):
             "==": lambda a, b: a == b,
             "!=": lambda a, b: a != b,
         }
-        return ops[self.op](left_val, right_val)
+        return bool(ops[self.op](left_val, right_val))
 
     def __repr__(self) -> str:
         return f"({self.left!r} {self.op} {self.right!r})"
