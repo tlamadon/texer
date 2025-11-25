@@ -826,3 +826,110 @@ class TestCycleList:
         assert "line width=2pt" in result
         assert "\\end{axis}" in result
         assert "\\end{tikzpicture}" in result
+
+    def test_addplot_plus_with_cycle_list(self):
+        """Test that AddPlot without style options generates \\addplot+ for cycle list usage."""
+        axis = Axis(
+            cycle_list=[
+                {"color": "blue", "mark": "*"},
+                {"color": "red", "mark": "square*"},
+            ],
+            plots=[
+                AddPlot(coords=Coordinates([(0, 1), (1, 2)])),
+                AddPlot(coords=Coordinates([(0, 2), (1, 3)])),
+            ],
+        )
+        result = axis.render({})
+        # Should generate \addplot+ when no explicit styling is provided
+        assert "\\addplot+" in result
+        # Count occurrences - should have 2 \addplot+ commands
+        assert result.count("\\addplot+") == 2
+
+    def test_addplot_without_plus_when_styled(self):
+        """Test that AddPlot with explicit styling generates \\addplot (not +)."""
+        axis = Axis(
+            cycle_list=[
+                {"color": "blue", "mark": "*"},
+                {"color": "red", "mark": "square*"},
+            ],
+            plots=[
+                AddPlot(color="green", coords=Coordinates([(0, 1), (1, 2)])),
+                AddPlot(mark="x", coords=Coordinates([(0, 2), (1, 3)])),
+            ],
+        )
+        result = axis.render({})
+        # Should generate \addplot when explicit styling is provided
+        assert "\\addplot[" in result
+        # Should NOT have \addplot+
+        assert "\\addplot+" not in result
+
+
+class TestLegendOptions:
+    def test_legend_cell_align(self):
+        """Test legend cell align option."""
+        axis = Axis(
+            legend_cell_align="left",
+            plots=[AddPlot(coords=Coordinates([(0, 1), (1, 2)]))],
+            legend=["Data"],
+        )
+        result = axis.render({})
+        assert "legend cell align=left" in result
+
+    def test_legend_columns(self):
+        """Test legend columns option."""
+        axis = Axis(
+            legend_columns=3,
+            plots=[
+                AddPlot(coords=Coordinates([(0, 1), (1, 2)])),
+                AddPlot(coords=Coordinates([(0, 2), (1, 3)])),
+                AddPlot(coords=Coordinates([(0, 3), (1, 4)])),
+            ],
+            legend=["A", "B", "C"],
+        )
+        result = axis.render({})
+        assert "legend columns=3" in result
+
+    def test_transpose_legend(self):
+        """Test transpose legend option."""
+        axis = Axis(
+            transpose_legend=True,
+            plots=[
+                AddPlot(coords=Coordinates([(0, 1), (1, 2)])),
+                AddPlot(coords=Coordinates([(0, 2), (1, 3)])),
+            ],
+            legend=["Series 1", "Series 2"],
+        )
+        result = axis.render({})
+        assert "transpose legend" in result
+
+    def test_multiple_legend_options(self):
+        """Test combining multiple legend options."""
+        axis = Axis(
+            legend_pos="north east",
+            legend_cell_align="left",
+            legend_columns=2,
+            transpose_legend=True,
+            plots=[
+                AddPlot(coords=Coordinates([(0, 1), (1, 2)])),
+                AddPlot(coords=Coordinates([(0, 2), (1, 3)])),
+            ],
+            legend=["Data 1", "Data 2"],
+        )
+        result = axis.render({})
+        assert "legend pos={north east}" in result
+        assert "legend cell align=left" in result
+        assert "legend columns=2" in result
+        assert "transpose legend" in result
+
+    def test_legend_options_with_ref(self):
+        """Test legend options with dynamic data from Ref."""
+        axis = Axis(
+            legend_cell_align=Ref("align"),
+            legend_columns=Ref("cols"),
+            plots=[AddPlot(coords=Coordinates([(0, 1), (1, 2)]))],
+            legend=["Data"],
+        )
+        data = {"align": "center", "cols": 2}
+        result = axis.render(data)
+        assert "legend cell align=center" in result
+        assert "legend columns=2" in result

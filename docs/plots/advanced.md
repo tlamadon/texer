@@ -6,6 +6,9 @@ Complete reference for all plot customization options.
 
 PGFPlots cycle lists define a sequence of styles that are automatically applied to successive `\addplot` commands. This is useful for maintaining consistent styling across multiple plots without manually specifying colors and markers for each one.
 
+!!! note "Automatic `\addplot+` Generation"
+    When you create an `AddPlot` without explicit styling options (color, mark, style, or line_width), texer automatically generates `\addplot+` instead of `\addplot`. The `+` tells PGFPlots to use the next style from the cycle list. If you specify any explicit styling, texer generates `\addplot` to override the cycle list for that specific plot.
+
 ### Using Predefined Cycle Lists
 
 PGFPlots comes with several built-in cycle lists. You can reference them by name:
@@ -201,6 +204,36 @@ plot = PGFPlot(
 )
 ```
 
+### Overriding Cycle List Styles
+
+You can selectively override the cycle list for specific plots by providing explicit styling:
+
+```python
+from texer import PGFPlot, Axis, AddPlot, Coordinates
+
+plot = PGFPlot(
+    Axis(
+        xlabel="X",
+        ylabel="Y",
+        cycle_list=[
+            {"color": "blue", "mark": "*"},
+            {"color": "red", "mark": "square*"},
+            {"color": "green", "mark": "triangle*"},
+        ],
+        plots=[
+            # Uses cycle list (generates \addplot+)
+            AddPlot(coords=Coordinates([(0, 0), (1, 1)])),
+            # Overrides with explicit styling (generates \addplot)
+            AddPlot(color="purple", mark="x", coords=Coordinates([(0, 1), (1, 2)])),
+            # Uses cycle list again (generates \addplot+)
+            AddPlot(coords=Coordinates([(0, 0.5), (1, 1.5)])),
+        ],
+    )
+)
+```
+
+In this example, the first and third plots use `\addplot+` to pick styles from the cycle list (blue and green respectively), while the second plot uses `\addplot` with explicit purple color to override the cycle list.
+
 ### Priority Rules
 
 If both `cycle_list_name` and `cycle_list` are specified, `cycle_list_name` takes precedence:
@@ -268,3 +301,148 @@ print(plot.render(data))
 ```
 
 This produces a plot where each experiment automatically gets the next style from the cycle list, maintaining visual consistency across all data series.
+
+## Legend Customization
+
+Beyond basic legend positioning, texer supports comprehensive legend customization options.
+
+### Legend Cell Alignment
+
+Control the horizontal alignment of text within legend cells:
+
+```python
+from texer import PGFPlot, Axis, AddPlot, Coordinates
+
+plot = PGFPlot(
+    Axis(
+        xlabel="X",
+        ylabel="Y",
+        legend_cell_align="left",  # "left", "center", or "right"
+        plots=[
+            AddPlot(color="blue", mark="*", coords=Coordinates([(0, 1), (1, 2)])),
+            AddPlot(color="red", mark="square*", coords=Coordinates([(0, 2), (1, 3)])),
+        ],
+        legend=["Short", "A Very Long Legend Entry"],
+    )
+)
+```
+
+### Legend Columns
+
+Arrange legend entries in multiple columns:
+
+```python
+plot = PGFPlot(
+    Axis(
+        xlabel="X",
+        ylabel="Y",
+        legend_columns=2,  # Number of columns
+        plots=[
+            AddPlot(color="blue", coords=Coordinates([(0, 1), (1, 2)])),
+            AddPlot(color="red", coords=Coordinates([(0, 2), (1, 3)])),
+            AddPlot(color="green", coords=Coordinates([(0, 3), (1, 4)])),
+            AddPlot(color="orange", coords=Coordinates([(0, 4), (1, 5)])),
+        ],
+        legend=["Series A", "Series B", "Series C", "Series D"],
+    )
+)
+```
+
+This creates a 2-column legend with entries arranged as:
+```
+Series A    Series B
+Series C    Series D
+```
+
+### Transpose Legend
+
+By default, multi-column legends fill horizontally (left-to-right, then next row). Use `transpose_legend` to fill vertically instead:
+
+```python
+plot = PGFPlot(
+    Axis(
+        legend_columns=2,
+        transpose_legend=True,  # Fill columns vertically
+        plots=[
+            AddPlot(color="blue", coords=Coordinates([(0, 1), (1, 2)])),
+            AddPlot(color="red", coords=Coordinates([(0, 2), (1, 3)])),
+            AddPlot(color="green", coords=Coordinates([(0, 3), (1, 4)])),
+            AddPlot(color="orange", coords=Coordinates([(0, 4), (1, 5)])),
+        ],
+        legend=["A", "B", "C", "D"],
+    )
+)
+```
+
+With `transpose_legend=True`, entries are arranged as:
+```
+A    C
+B    D
+```
+
+### Combining Legend Options
+
+All legend options can be combined for full control:
+
+```python
+from texer import PGFPlot, Axis, AddPlot, Coordinates
+
+plot = PGFPlot(
+    Axis(
+        xlabel="Time (s)",
+        ylabel="Value",
+        # Position
+        legend_pos="south east",
+        # Alignment
+        legend_cell_align="left",
+        # Layout
+        legend_columns=2,
+        transpose_legend=True,
+        plots=[
+            AddPlot(color="blue", mark="*", coords=Coordinates([(0, 0), (1, 1)])),
+            AddPlot(color="red", mark="square*", coords=Coordinates([(0, 1), (1, 2)])),
+            AddPlot(color="green", mark="triangle*", coords=Coordinates([(0, 0.5), (1, 1.5)])),
+        ],
+        legend=["Experiment 1", "Experiment 2", "Experiment 3"],
+    )
+)
+```
+
+### Dynamic Legend Options
+
+Like other plot options, legend settings can be data-driven using `Ref`:
+
+```python
+from texer import PGFPlot, Axis, AddPlot, Coordinates, Ref
+
+plot = PGFPlot(
+    Axis(
+        xlabel="X",
+        ylabel="Y",
+        legend_cell_align=Ref("align"),
+        legend_columns=Ref("cols"),
+        plots=[
+            AddPlot(color="blue", coords=Coordinates([(0, 1), (1, 2)])),
+            AddPlot(color="red", coords=Coordinates([(0, 2), (1, 3)])),
+        ],
+        legend=["Data 1", "Data 2"],
+    )
+)
+
+data = {
+    "align": "center",
+    "cols": 2,
+}
+
+print(plot.render(data))
+```
+
+### Available Legend Options
+
+| Option | Type | Description |
+|--------|------|-------------|
+| `legend_pos` | str | Position of legend box (`"north west"`, `"south east"`, etc.) |
+| `legend_style` | str | Raw LaTeX style options for the legend |
+| `legend_cell_align` | str | Text alignment within cells (`"left"`, `"center"`, `"right"`) |
+| `legend_columns` | int | Number of columns in legend layout |
+| `transpose_legend` | bool | Fill legend vertically (by column) instead of horizontally |

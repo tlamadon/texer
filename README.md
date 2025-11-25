@@ -86,7 +86,7 @@ print(evaluate(plot, data))
 
 ### Cycle Lists
 
-PGFPlots cycle lists allow you to define a sequence of styles that are automatically applied to successive `\addplot` commands:
+PGFPlots cycle lists allow you to define a sequence of styles that are automatically applied to successive `\addplot` commands. When using cycle lists, `AddPlot` automatically generates `\addplot+` (instead of `\addplot`) when no explicit styling is provided, allowing PGFPlots to pick the next style from the cycle list:
 
 ```python
 from texer import PGFPlot, Axis, AddPlot, Coordinates
@@ -96,6 +96,7 @@ plot = PGFPlot(
     Axis(
         cycle_list_name="color list",
         plots=[
+            # These generate \addplot+ to use cycle list styles
             AddPlot(coords=Coordinates([(0, 0), (1, 1), (2, 4)])),
             AddPlot(coords=Coordinates([(0, 1), (1, 2), (2, 3)])),
         ],
@@ -111,6 +112,7 @@ plot = PGFPlot(
             {"color": "green", "mark": "triangle*", "line width": "2pt"},
         ],
         plots=[
+            # Automatically uses \addplot+ to apply cycle list styles
             AddPlot(coords=Coordinates([(0, 1), (1, 2), (2, 4)])),
             AddPlot(coords=Coordinates([(0, 2), (1, 3), (2, 5)])),
         ],
@@ -124,6 +126,19 @@ plot = PGFPlot(
         plots=[
             AddPlot(coords=Coordinates([(0, 0), (1, 1)])),
             AddPlot(coords=Coordinates([(0, 1), (1, 2)])),
+        ],
+    )
+)
+
+# Override cycle list with explicit styling
+plot = PGFPlot(
+    Axis(
+        cycle_list=["blue", "red", "green"],
+        plots=[
+            # This uses the cycle list (generates \addplot+)
+            AddPlot(coords=Coordinates([(0, 0), (1, 1)])),
+            # This overrides with explicit styling (generates \addplot)
+            AddPlot(color="purple", mark="x", coords=Coordinates([(0, 1), (1, 2)])),
         ],
     )
 )

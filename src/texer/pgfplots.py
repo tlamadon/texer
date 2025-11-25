@@ -182,6 +182,9 @@ class AddPlot:
     error_bars: bool = False
     error_bar_style: dict[str, Any] = field(default_factory=dict)
 
+    # Cycle list option
+    use_cycle_list: bool = False
+
     # Raw options escape hatch
     _raw_options: str | None = None
 
@@ -221,7 +224,15 @@ class AddPlot:
             options["mesh"] = True
 
         # 3D variant
-        plot_cmd = "\\addplot3" if self.surf or self.mesh else "\\addplot"
+        base_cmd = "\\addplot3" if self.surf or self.mesh else "\\addplot"
+
+        # Check if we should use cycle list automatically
+        # Use + if use_cycle_list is explicitly set, OR if there are no color/mark/style options
+        has_style_options = bool(self.color or self.mark or self.style or self.line_width)
+        should_use_cycle = self.use_cycle_list or not has_style_options
+
+        # Add + for cycle list usage
+        plot_cmd = base_cmd + "+" if should_use_cycle else base_cmd
 
         # Format options string
         opts_str = format_options(options, self._raw_options)
@@ -303,6 +314,9 @@ class Axis:
     legend: list[Any] | Legend | Iter | Spec | None = None
     legend_pos: LegendPos | str | Spec | None = None
     legend_style: str | Spec | None = None
+    legend_cell_align: Literal["left", "center", "right"] | str | Spec | None = None
+    legend_columns: int | Spec | None = None
+    transpose_legend: bool | Spec | None = None
 
     # Grid
     grid: GridStyle | bool | Spec | None = None
@@ -334,7 +348,7 @@ class Axis:
         from texer.eval import _evaluate_impl
 
         # Build options
-        options = {}
+        options: dict[str, Any] = {}
 
         # Labels (resolve if Spec)
         if self.xlabel is not None:
@@ -360,11 +374,19 @@ class Axis:
         if self.zmax is not None:
             options["zmax"] = resolve_value(self.zmax, data, scope)
 
-        # Legend position (resolve if Spec)
+        # Legend options (resolve if Spec)
         if self.legend_pos is not None:
             options["legend pos"] = resolve_value(self.legend_pos, data, scope)
         if self.legend_style is not None:
             options["legend style"] = resolve_value(self.legend_style, data, scope)
+        if self.legend_cell_align is not None:
+            options["legend cell align"] = resolve_value(self.legend_cell_align, data, scope)
+        if self.legend_columns is not None:
+            options["legend columns"] = resolve_value(self.legend_columns, data, scope)
+        if self.transpose_legend is not None:
+            transpose_value = resolve_value(self.transpose_legend, data, scope)
+            if transpose_value:
+                options["transpose legend"] = True
 
         # Grid (resolve if Spec)
         grid_value = resolve_value(self.grid, data, scope) if isinstance(self.grid, Spec) else self.grid
@@ -484,6 +506,9 @@ class NextGroupPlot:
     legend: list[Any] | Legend | Iter | Spec | None = None
     legend_pos: LegendPos | str | Spec | None = None
     legend_style: str | Spec | None = None
+    legend_cell_align: Literal["left", "center", "right"] | str | Spec | None = None
+    legend_columns: int | Spec | None = None
+    transpose_legend: bool | Spec | None = None
 
     # Grid
     grid: GridStyle | bool | Spec | None = None
@@ -508,7 +533,7 @@ class NextGroupPlot:
         from texer.eval import _evaluate_impl
 
         # Build options
-        options = {}
+        options: dict[str, Any] = {}
 
         # Labels (resolve if Spec)
         if self.xlabel is not None:
@@ -534,11 +559,19 @@ class NextGroupPlot:
         if self.zmax is not None:
             options["zmax"] = resolve_value(self.zmax, data, scope)
 
-        # Legend position (resolve if Spec)
+        # Legend options (resolve if Spec)
         if self.legend_pos is not None:
             options["legend pos"] = resolve_value(self.legend_pos, data, scope)
         if self.legend_style is not None:
             options["legend style"] = resolve_value(self.legend_style, data, scope)
+        if self.legend_cell_align is not None:
+            options["legend cell align"] = resolve_value(self.legend_cell_align, data, scope)
+        if self.legend_columns is not None:
+            options["legend columns"] = resolve_value(self.legend_columns, data, scope)
+        if self.transpose_legend is not None:
+            transpose_value = resolve_value(self.transpose_legend, data, scope)
+            if transpose_value:
+                options["transpose legend"] = True
 
         # Grid (resolve if Spec)
         grid_value = resolve_value(self.grid, data, scope) if isinstance(self.grid, Spec) else self.grid
