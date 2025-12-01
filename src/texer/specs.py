@@ -156,12 +156,30 @@ class Iter(Spec):
         """Resolve by iterating over source and applying template."""
         # Resolve the source collection
         if isinstance(self.source, str):
-            items = glom.glom(data, self.source)
+            try:
+                items = glom.glom(data, self.source)
+            except glom.PathAccessError as e:
+                raise ValueError(
+                    f"Iter source path '{self.source}' not found in data. "
+                    f"Available keys: {list(data.keys()) if isinstance(data, dict) else 'N/A'}. "
+                    f"Original error: {e}"
+                ) from e
         else:
             items = self.source.resolve(data, scope)
 
+        if items is None:
+            raise TypeError(
+                f"Iter source resolved to None. "
+                f"Source: {self.source!r}. "
+                f"Ensure the data path exists and contains a valid collection."
+            )
+
         if not hasattr(items, "__iter__"):
-            raise TypeError(f"Iter source must be iterable, got {type(items)}")
+            raise TypeError(
+                f"Iter source must be iterable, got {type(items).__name__}. "
+                f"Source: {self.source!r}. "
+                f"Expected a list, tuple, or other iterable collection."
+            )
 
         results = []
         for item in items:

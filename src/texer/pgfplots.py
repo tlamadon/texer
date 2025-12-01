@@ -302,6 +302,28 @@ class Legend:
         # Resolve entries if it's a Spec (like Iter)
         entries = resolve_value(self.entries, data, scope)
 
+        # Validate that entries is iterable
+        if entries is None:
+            raise TypeError(
+                f"Legend entries resolved to None. "
+                f"Check that your Iter source path exists in the data. "
+                f"Entries spec: {self.entries!r}"
+            )
+
+        if isinstance(entries, Iter):
+            raise TypeError(
+                f"Legend entries is an unresolved Iter object. "
+                f"This usually means the Iter's source path was not found or returned None. "
+                f"Iter source: {entries.source!r}. "
+                f"Available data keys: {list(data.keys()) if isinstance(data, dict) else 'N/A'}"
+            )
+
+        if not hasattr(entries, "__iter__") or isinstance(entries, str):
+            raise TypeError(
+                f"Legend entries must be a list or iterable, got {type(entries).__name__}. "
+                f"If using an Iter, ensure the source path exists and contains a collection."
+            )
+
         resolved = []
         for entry in entries:
             resolved.append(_evaluate_impl(entry, data, scope, escape=False))
