@@ -21,21 +21,27 @@ from texer import (
 
 def check_dependencies():
     """Check if required tools are available."""
-    required = ["pdflatex", "convert"]
-    missing = []
+    if shutil.which("pdflatex") is None:
+        print("Error: pdflatex not found")
+        print("  Install texlive-latex-base texlive-pictures")
+        return False
 
-    for tool in required:
-        if shutil.which(tool) is None:
-            missing.append(tool)
-
-    if missing:
-        print(f"Error: Missing required tools: {', '.join(missing)}")
-        print("\nInstall instructions:")
-        print("  - pdflatex: Install texlive-latex-base texlive-pictures")
-        print("  - convert: Install imagemagick")
+    # Check for either convert (ImageMagick) or pdftoppm (poppler-utils)
+    if shutil.which("convert") is None and shutil.which("pdftoppm") is None:
+        print("Error: Neither 'convert' (ImageMagick) nor 'pdftoppm' (poppler-utils) found")
+        print("  Install imagemagick or poppler-utils")
         return False
 
     return True
+
+
+def get_pdf_converter():
+    """Get the available PDF to PNG converter."""
+    if shutil.which("convert"):
+        return "convert"
+    elif shutil.which("pdftoppm"):
+        return "pdftoppm"
+    return None
 
 
 def compile_latex_to_png(latex_content: str, output_path: Path, crop: bool = True):
@@ -91,29 +97,54 @@ def compile_latex_to_png(latex_content: str, output_path: Path, crop: bool = Tru
         return False
 
     # Convert PDF to PNG
+    converter = get_pdf_converter()
     try:
-        convert_args = [
-            "convert",
-            "-density", "300",  # High DPI
-            "-quality", "100",
-            str(pdf_file),
-        ]
+        if converter == "convert":
+            convert_args = [
+                "convert",
+                "-density", "300",  # High DPI
+                "-quality", "100",
+                str(pdf_file),
+            ]
 
-        if crop:
-            convert_args.extend(["-trim", "+repage"])
+            if crop:
+                convert_args.extend(["-trim", "+repage"])
 
-        convert_args.extend([
-            "-background", "white",
-            "-alpha", "remove",
-            str(output_path),
-        ])
+            convert_args.extend([
+                "-background", "white",
+                "-alpha", "remove",
+                str(output_path),
+            ])
 
-        result = subprocess.run(
-            convert_args,
-            capture_output=True,
-            text=True,
-            timeout=30,
-        )
+            result = subprocess.run(
+                convert_args,
+                capture_output=True,
+                text=True,
+                timeout=30,
+            )
+
+        elif converter == "pdftoppm":
+            # pdftoppm outputs to <prefix>-<page>.png, we need to rename
+            prefix = temp_dir / output_path.stem
+            result = subprocess.run(
+                [
+                    "pdftoppm",
+                    "-png",
+                    "-r", "300",  # High DPI
+                    "-singlefile",
+                    str(pdf_file),
+                    str(prefix),
+                ],
+                capture_output=True,
+                text=True,
+                timeout=30,
+            )
+
+            if result.returncode == 0:
+                # Move the generated file to the output path
+                generated = Path(f"{prefix}.png")
+                if generated.exists():
+                    shutil.move(str(generated), str(output_path))
 
         if result.returncode != 0:
             print(f"Error converting {pdf_file.name} to PNG:")
@@ -255,6 +286,148 @@ def generate_plot_examples(output_dir: Path):
 """ + evaluate(plot4, {}) + "\n\\end{document}"
 
     compile_latex_to_png(latex4, output_dir / "plots" / "cycle_list.png")
+
+    # Example 5: Dynamic GroupPlots with Iter/Ref
+    plot5 = PGFPlot(
+        GroupPlot(
+            group_size=Ref("grid_size"),
+            width="6cm",
+            height="4cm",
+            plots=Iter(
+                Ref("subplots"),
+                template=NextGroupPlot(
+                    title=Ref("title"),
+                    xlabel=Ref("xlabel"),
+                    ylabel=Ref("ylabel"),
+                    plots=[
+                        AddPlot(
+                            color=Ref("color"),
+                            coords=Coordinates(
+                                Iter(Ref("data"), x=Ref("x"), y=Ref("y"))
+                            ),
+                        )
+                    ],
+                )
+            ),
+        )
+    )
+
+    data5 = {
+        "grid_size": "2 by 2",
+        "subplots": [
+            {
+                "title": "Experiment A",
+                "xlabel": "Time",
+                "ylabel": "Value",
+                "color": "blue",
+                "data": [{"x": 0, "y": 1}, {"x": 1, "y": 2}, {"x": 2, "y": 4}],
+            },
+            {
+                "title": "Experiment B",
+                "xlabel": "Time",
+                "ylabel": "Value",
+                "color": "red",
+                "data": [{"x": 0, "y": 0.5}, {"x": 1, "y": 1.5}, {"x": 2, "y": 3.5}],
+            },
+            {
+                "title": "Experiment C",
+                "xlabel": "Time",
+                "ylabel": "Value",
+                "color": "green",
+                "data": [{"x": 0, "y": 2}, {"x": 1, "y": 3}, {"x": 2, "y": 5}],
+            },
+            {
+                "title": "Experiment D",
+                "xlabel": "Time",
+                "ylabel": "Value",
+                "color": "orange",
+                "data": [{"x": 0, "y": 1.5}, {"x": 1, "y": 2.5}, {"x": 2, "y": 4.5}],
+            },
+        ],
+    }
+
+    latex5 = r"""\documentclass[border=2mm]{standalone}
+\usepackage{pgfplots}
+\pgfplotsset{compat=1.18}
+\usepgfplotslibrary{groupplots}
+\begin{document}
+""" + evaluate(plot5, data5) + "\n\\end{document}"
+
+    compile_latex_to_png(latex5, output_dir / "plots" / "groupplot_dynamic.png")
+
+    # Example 6: Real-world numpy-style data
+    import numpy as np
+    np.random.seed(42)
+    x = np.linspace(0, 10, 50)
+
+    plot6 = PGFPlot(
+        GroupPlot(
+            group_size="2 by 2",
+            width="7cm",
+            height="5cm",
+            xmin=0,
+            xmax=10,
+            xlabels_at="edge bottom",
+            ylabels_at="edge left",
+            plots=Iter(
+                Ref("experiments"),
+                template=NextGroupPlot(
+                    title=Ref("name"),
+                    xlabel=Ref("xlabel"),
+                    ylabel=Ref("ylabel"),
+                    plots=[
+                        AddPlot(
+                            color="blue",
+                            mark="*",
+                            coords=Coordinates(x=Ref("x"), y=Ref("y")),
+                        )
+                    ],
+                )
+            ),
+        )
+    )
+
+    data6 = {
+        "experiments": [
+            {
+                "name": "Linear Growth",
+                "xlabel": "Time (h)",
+                "ylabel": "Concentration",
+                "x": x,
+                "y": 2 * x + np.random.normal(0, 0.5, len(x)),
+            },
+            {
+                "name": "Exponential Growth",
+                "xlabel": "Time (h)",
+                "ylabel": "Population",
+                "x": x,
+                "y": np.exp(0.3 * x) + np.random.normal(0, 0.5, len(x)),
+            },
+            {
+                "name": "Saturation",
+                "xlabel": "Time (h)",
+                "ylabel": "Product",
+                "x": x,
+                "y": 10 * (1 - np.exp(-0.5 * x)) + np.random.normal(0, 0.3, len(x)),
+            },
+            {
+                "name": "Oscillation",
+                "xlabel": "Time (h)",
+                "ylabel": "Amplitude",
+                "x": x,
+                "y": 5 * np.sin(x) + np.random.normal(0, 0.3, len(x)),
+            },
+        ]
+    }
+
+    latex6 = r"""\documentclass[border=2mm]{standalone}
+\usepackage{pgfplots}
+\pgfplotsset{compat=1.18}
+\usepgfplotslibrary{groupplots}
+\begin{document}
+""" + evaluate(plot6, data6) + "\n\\end{document}"
+
+    compile_latex_to_png(latex6, output_dir / "plots" / "groupplot_realworld.png")
 
 
 def generate_table_examples(output_dir: Path):
