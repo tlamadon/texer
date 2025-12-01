@@ -12,7 +12,7 @@ Specs are lazy descriptors that tell texer how to extract and transform data. Th
 | `Iter` | Loop over collections | `Iter(Ref("items"), template=...)` |
 | `Format` | Format values | `Format(Ref("x"), ".2f")` |
 | `Cond` | Conditional logic | `Cond(Ref("x") > 5, "high", "low")` |
-| `Raw` | Unescaped LaTeX | `Raw(r"\textbf{bold}")` |
+| `Raw` | Raw LaTeX (for plots) | `Raw(r"\textbf{bold}")` |
 
 ## Ref: Accessing Data
 
@@ -164,8 +164,8 @@ Cond(Ref("x") > 5, "high", "low")
 # With specs as results
 Cond(
     Ref("active"),
-    Raw(r"\checkmark"),  # if true
-    ""                   # if false
+    r"\checkmark",  # if true
+    ""              # if false
 )
 
 # Nested conditions
@@ -203,40 +203,38 @@ Ref("x") != 5     # not equal
 ### Example: Status Colors
 
 ```python
-from texer import Row, Cell, Ref, Iter, Cond, Raw, Format
+from texer import Row, Cell, Ref, Iter, Cond, Format
 
 Row(
     Ref("test_name"),
     Format(Ref("score"), ".1f"),
     Cond(
         Ref("score") >= 70,
-        Raw(r"\textcolor{green}{PASS}"),
-        Raw(r"\textcolor{red}{FAIL}"),
+        r"\textcolor{green}{PASS}",
+        r"\textcolor{red}{FAIL}",
     ),
 )
 ```
 
-## Raw: Unescaped LaTeX
+## Writing LaTeX in Tables
 
-By default, texer escapes special LaTeX characters. Use `Raw` when you need unescaped LaTeX:
+Tables do **not** auto-escape LaTeX special characters. You're expected to write valid LaTeX directly using raw strings:
 
 ```python
-from texer import Raw
+from texer import Row
 
-# LaTeX commands
-Raw(r"\textbf{bold}")
-Raw(r"\textit{italic}")
-Raw(r"\hline")
+# Use raw strings (r"...") for LaTeX
+Row(r"\textbf{bold}", r"$\alpha + \beta$")
 
 # Math mode
-Raw(r"$\alpha + \beta$")
+Row("Formula", r"$x^2 + y^2 = r^2$")
 
-# Complex formatting
-Raw(r"\textcolor{red}{FAIL}")
+# Colors (requires xcolor package)
+Row("Status", r"\textcolor{red}{FAIL}")
 ```
 
-!!! warning "Safety"
-    `Raw` bypasses all escaping. Make sure the LaTeX you provide is valid and safe.
+!!! tip "Raw Strings"
+    Use Python raw strings (`r"..."`) to avoid escaping backslashes. For example, `r"\textbf{bold}"` instead of `"\\textbf{bold}"`.
 
 ## The Evaluation Process
 
@@ -246,8 +244,10 @@ When you call `evaluate(structure, data)`:
 2. **Evaluate specs**: When it encounters a spec:
    - The spec is evaluated against the current data context
    - For `Iter`, the context changes for each iteration
-3. **Escape values**: All values (except `Raw`) are escaped for LaTeX
-4. **Generate LaTeX**: The final LaTeX string is assembled
+3. **Generate LaTeX**: The final LaTeX string is assembled
+
+!!! note "No Auto-Escaping in Tables"
+    Tables do not auto-escape LaTeX special characters. Use raw strings (`r"..."`) and write valid LaTeX directly.
 
 ### Example Flow
 

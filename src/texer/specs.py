@@ -219,7 +219,11 @@ class Format(Spec):
     def resolve(self, data: Any, scope: dict[str, Any] | None = None) -> str:
         """Resolve and format the value."""
         val = resolve_value(self.value, data, scope)
-        return format(val, self.fmt)
+        result = format(val, self.fmt)
+        # Escape % from Python percentage formatting for LaTeX compatibility
+        if "%" in self.fmt:
+            result = result.replace("%", r"\%")
+        return result
 
     def __repr__(self) -> str:
         return f'Format({self.value!r}, "{self.fmt}")'

@@ -24,13 +24,12 @@ class Cell:
     bold: bool | Spec = False
     italic: bool | Spec = False
     align: str | None = None
-    _raw: bool = False
 
     def render(self, data: Any, scope: dict[str, Any] | None = None) -> str:
         """Render the cell to LaTeX."""
         from texer.eval import _evaluate_impl, evaluate_value
 
-        content = _evaluate_impl(self.content, data, scope or {}, escape=not self._raw)
+        content = _evaluate_impl(self.content, data, scope or {}, escape=False)
 
         # Resolve bold/italic if they are Specs
         bold = evaluate_value(self.bold, data, scope) if isinstance(self.bold, Spec) else self.bold
@@ -60,7 +59,7 @@ class MultiColumn:
         """Render the multicolumn cell."""
         from texer.eval import _evaluate_impl
 
-        content = _evaluate_impl(self.content, data, scope or {}, escape=True)
+        content = _evaluate_impl(self.content, data, scope or {}, escape=False)
         return f"\\multicolumn{{{self.ncols}}}{{{self.align}}}{{{content}}}"
 
 
@@ -80,7 +79,7 @@ class MultiRow:
         """Render the multirow cell."""
         from texer.eval import _evaluate_impl
 
-        content = _evaluate_impl(self.content, data, scope or {}, escape=True)
+        content = _evaluate_impl(self.content, data, scope or {}, escape=False)
         return f"\\multirow{{{self.nrows}}}{{{self.width}}}{{{content}}}"
 
 
@@ -110,7 +109,7 @@ class Row:
             if isinstance(cell, (Cell, MultiColumn, MultiRow)):
                 rendered_cells.append(cell.render(data, scope))
             else:
-                rendered_cells.append(_evaluate_impl(cell, data, scope or {}, escape=True))
+                rendered_cells.append(_evaluate_impl(cell, data, scope or {}, escape=False))
 
         row_content = " & ".join(rendered_cells)
         return f"{row_content} \\\\"
@@ -217,7 +216,7 @@ class Tabular:
                         results.append(self.rows.template.render(item, scope))
                     else:
                         from texer.eval import _evaluate_impl
-                        results.append(_evaluate_impl(self.rows.template, item, scope, escape=True))
+                        results.append(_evaluate_impl(self.rows.template, item, scope, escape=False))
                 return results
             else:
                 # No template, just resolve
@@ -270,7 +269,7 @@ class Table:
         # Caption (before table for some styles)
         if self.caption is not None:
             from texer.eval import _evaluate_impl
-            caption_text = _evaluate_impl(self.caption, data, scope, escape=True)
+            caption_text = _evaluate_impl(self.caption, data, scope, escape=False)
             lines.append(f"  \\caption{{{caption_text}}}")
 
         # Label

@@ -123,18 +123,18 @@ rows=Iter(
 
 ## Text Colors
 
-Use `Raw` with LaTeX `\textcolor`:
+Use LaTeX `\textcolor` directly:
 
 ```python
-from texer import Raw, Cell
+from texer import Cell
 
 # Basic color
-Cell(Raw(r"\textcolor{red}{Error}"))
+Cell(r"\textcolor{red}{Error}")
 
 # With standard colors
-Cell(Raw(r"\textcolor{blue}{Information}"))
-Cell(Raw(r"\textcolor{green}{Success}"))
-Cell(Raw(r"\textcolor{red}{Failed}"))
+Cell(r"\textcolor{blue}{Information}")
+Cell(r"\textcolor{green}{Success}")
+Cell(r"\textcolor{red}{Failed}")
 ```
 
 !!! note "Color Package"
@@ -143,7 +143,7 @@ Cell(Raw(r"\textcolor{red}{Failed}"))
 ## Colored Cells with Conditions
 
 ```python
-from texer import Cond, Raw, Ref, Iter, Row
+from texer import Cond, Ref, Iter, Row
 
 rows=Iter(
     Ref("tests"),
@@ -152,8 +152,8 @@ rows=Iter(
         Ref("status"),
         Cond(
             Ref("passed"),
-            Raw(r"\textcolor{green}{\checkmark}"),
-            Raw(r"\textcolor{red}{\times}"),
+            r"\textcolor{green}{\checkmark}",
+            r"\textcolor{red}{\times}",
         ),
     )
 )
@@ -185,11 +185,11 @@ Row(
 Use `\cellcolor` for cell backgrounds:
 
 ```python
-from texer import Raw
+from texer import Row
 
 Row(
     "Normal",
-    Raw(r"\cellcolor{yellow}Highlighted"),
+    r"\cellcolor{yellow}Highlighted",
     "Normal",
 )
 ```
@@ -200,23 +200,23 @@ Row(
 ## Font Sizes
 
 ```python
-from texer import Raw
+from texer import Cell
 
-Cell(Raw(r"\small Small text"))
-Cell(Raw(r"\large Large text"))
-Cell(Raw(r"\Large Even larger"))
-Cell(Raw(r"\tiny Tiny text"))
+Cell(r"\small Small text")
+Cell(r"\large Large text")
+Cell(r"\Large Even larger")
+Cell(r"\tiny Tiny text")
 ```
 
 ## Mathematical Content
 
 ```python
-from texer import Raw
+from texer import Row
 
 Row(
     "Formula",
-    Raw(r"$\alpha + \beta = \gamma$"),
-    Raw(r"$x^2 + y^2 = r^2$"),
+    r"$\alpha + \beta = \gamma$",
+    r"$x^2 + y^2 = r^2$",
 )
 ```
 
@@ -225,16 +225,14 @@ Row(
 Stack multiple formatting options:
 
 ```python
-from texer import Cell, Raw
+from texer import Cell
 
 # Bold italic colored text
-Cell(
-    Raw(r"\textcolor{blue}{\textbf{\textit{Important Note}}}"),
-)
+Cell(r"\textcolor{blue}{\textbf{\textit{Important Note}}}")
 
 # Or with Cell attributes
 Cell(
-    Raw(r"\textcolor{blue}{Important}"),
+    r"\textcolor{blue}{Important}",
     bold=True,
     italic=True,
 )
@@ -257,7 +255,7 @@ Row(
 ## Complete Example
 
 ```python
-from texer import Table, Tabular, Row, Cell, Ref, Iter, Format, Cond, Raw, evaluate
+from texer import Table, Tabular, Row, Cell, Ref, Iter, Format, Cond, evaluate
 
 table = Table(
     Tabular(
@@ -284,8 +282,8 @@ table = Table(
                 # Colored status
                 Cond(
                     Ref("passed"),
-                    Raw(r"\textcolor{green}{PASS}"),
-                    Raw(r"\textcolor{red}{FAIL}"),
+                    r"\textcolor{green}{PASS}",
+                    r"\textcolor{red}{FAIL}",
                 ),
             )
         ),
@@ -327,30 +325,34 @@ print(evaluate(table, data))
 
 ## LaTeX Special Characters
 
-texer automatically escapes special LaTeX characters (`&`, `%`, `$`, `_`, etc.), but you can use `Raw` for unescaped content:
+Tables do **not** auto-escape LaTeX special characters. You're expected to write valid LaTeX directly using raw strings:
 
 ```python
-# Automatic escaping
-Row("Price", "$100")  # Renders as: Price & \$100 \\
+# Write LaTeX directly with raw strings
+Row("Formula", r"$x^2$")  # Renders as: Formula & $x^2$ \\
 
-# Unescaped with Raw
-Row("Formula", Raw(r"$x^2$"))  # Renders as: Formula & $x^2$ \\
+# For literal special characters, escape them yourself
+Row("Price", r"\$100")  # Renders as: Price & \$100 \\
+Row("Percent", r"50\%")  # Renders as: Percent & 50\% \\
 ```
+
+!!! tip "Raw Strings"
+    Use Python raw strings (`r"..."`) to avoid escaping backslashes.
 
 ## Custom LaTeX Commands
 
-Use `Raw` for custom LaTeX commands:
+Use raw strings for custom LaTeX commands:
 
 ```python
-from texer import Raw, Cell
+from texer import Cell
 
 # Custom command
-Cell(Raw(r"\mycustomcommand{value}"))
+Cell(r"\mycustomcommand{value}")
 
 # With conditionals
 Cond(
     Ref("is_important"),
-    Raw(r"\important{" + Ref("text") + r"}"),
+    r"\important{Important!}",
     Ref("text"),
 )
 ```
@@ -358,8 +360,8 @@ Cond(
 ## Tips
 
 1. **Keep it simple**: Use `Cell(text, bold=True)` for common cases
-2. **Use Raw sparingly**: Only when you need LaTeX-specific features
-3. **Escape or Raw**: Either let texer escape or use `Raw`, not both
+2. **Use raw strings**: Write `r"\textbf{bold}"` instead of `"\\textbf{bold}"`
+3. **Escape special chars**: For literal `$`, `%`, `&`, `_`, `#`, use `\$`, `\%`, `\&`, `\_`, `\#`
 4. **Test colors**: Different LaTeX distributions may support different colors
 
 ## Next Steps

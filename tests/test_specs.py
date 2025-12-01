@@ -74,7 +74,8 @@ class TestFormat:
 
     def test_percentage_format(self):
         data = {"pct": 0.256}
-        assert Format(Ref("pct"), ".1%").resolve(data) == "25.6%"
+        # % is escaped for LaTeX compatibility
+        assert Format(Ref("pct"), ".1%").resolve(data) == r"25.6\%"
 
     def test_integer_format(self):
         data = {"num": 42}
