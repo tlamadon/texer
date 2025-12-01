@@ -83,6 +83,32 @@ class TestTabular:
         assert "Item 1 & 10 \\\\" in result
         assert "Item 2 & 20 \\\\" in result
 
+    def test_tabular_with_iter_and_static_rows(self):
+        """Test combining Iter with static Row objects in a list."""
+        tabular = Tabular(
+            columns="lc",
+            header=Row("Name", "Value"),
+            rows=[
+                Row("Static First", "0"),
+                Iter(Ref("data"), template=Row(Ref("name"), Ref("value"))),
+                Row("Static Last", "100"),
+            ],
+        )
+        data = {
+            "data": [
+                {"name": "Dynamic 1", "value": 10},
+                {"name": "Dynamic 2", "value": 20},
+            ]
+        }
+        result = tabular.render(data)
+        # Static row before Iter
+        assert "Static First & 0 \\\\" in result
+        # Dynamic rows from Iter
+        assert "Dynamic 1 & 10 \\\\" in result
+        assert "Dynamic 2 & 20 \\\\" in result
+        # Static row after Iter
+        assert "Static Last & 100 \\\\" in result
+
 
 class TestTable:
     def test_table_environment(self):

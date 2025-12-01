@@ -195,34 +195,43 @@ class Tabular:
 
         return "\n".join(lines)
 
+    def _render_iter(self, iter_obj: Iter, data: Any, scope: dict[str, Any]) -> list[str]:
+        """Render an Iter object to a list of row strings."""
+        # Get the source items
+        if isinstance(iter_obj.source, str):
+            import glom  # type: ignore[import-untyped]
+            items = glom.glom(data, iter_obj.source)
+        else:
+            items = iter_obj.source.resolve(data, scope)
+
+        if iter_obj.template is not None:
+            # Render the template for each item
+            results = []
+            for item in items:
+                if isinstance(iter_obj.template, Row):
+                    results.append(iter_obj.template.render(item, scope))
+                elif hasattr(iter_obj.template, "render"):
+                    results.append(iter_obj.template.render(item, scope))
+                else:
+                    from texer.eval import _evaluate_impl
+                    results.append(_evaluate_impl(iter_obj.template, item, scope, escape=False))
+            return results
+        else:
+            # No template, just resolve
+            return [str(item) for item in items]
+
     def _render_rows(self, data: Any, scope: dict[str, Any]) -> list[str]:
         """Render the body rows."""
         if isinstance(self.rows, Iter):
-            # For Iter with a Row template, we need to handle specially
-            # Get the source items
-            if isinstance(self.rows.source, str):
-                import glom  # type: ignore[import-untyped]
-                items = glom.glom(data, self.rows.source)
-            else:
-                items = self.rows.source.resolve(data, scope)
-
-            if self.rows.template is not None:
-                # Render the template for each item
-                results = []
-                for item in items:
-                    if isinstance(self.rows.template, Row):
-                        results.append(self.rows.template.render(item, scope))
-                    elif hasattr(self.rows.template, "render"):
-                        results.append(self.rows.template.render(item, scope))
-                    else:
-                        from texer.eval import _evaluate_impl
-                        results.append(_evaluate_impl(self.rows.template, item, scope, escape=False))
-                return results
-            else:
-                # No template, just resolve
-                return [str(item) for item in items]
+            return self._render_iter(self.rows, data, scope)
         elif isinstance(self.rows, list):
-            return [row.render(data, scope) for row in self.rows]
+            results = []
+            for row in self.rows:
+                if isinstance(row, Iter):
+                    results.extend(self._render_iter(row, data, scope))
+                else:
+                    results.append(row.render(data, scope))
+            return results
         elif isinstance(self.rows, Row):
             return [self.rows.render(data, scope)]
         elif isinstance(self.rows, Spec):
