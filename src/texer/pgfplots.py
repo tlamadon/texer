@@ -815,12 +815,34 @@ class GroupPlot:
         else:
             lines.append("\\begin{groupplot}")
 
-        # Render each plot (resolve if Spec)
-        plots = resolve_value(self.plots, data, scope)
-        for plot in plots:
-            plot_lines = plot.render(data, scope)
-            for line in plot_lines.split("\n"):
-                lines.append(f"  {line}" if line else line)
+        # Render each plot (handle Iter specially to preserve scope)
+        if isinstance(self.plots, Iter):
+            # Resolve the Iter source to get items
+            if isinstance(self.plots.source, str):
+                import glom  # type: ignore[import-untyped]
+                items = glom.glom(data, self.plots.source)
+            elif isinstance(self.plots.source, Spec):
+                items = self.plots.source.resolve(data, scope)
+            else:
+                items = self.plots.source
+
+            # For each item, create updated scope and render template
+            for item in items:
+                item_scope = dict(scope) if scope else {}
+                if isinstance(item, dict):
+                    item_scope.update(item)
+                # Resolve and render the template with the item scope
+                plot = resolve_value(self.plots.template, item, item_scope)
+                plot_lines = plot.render(data, item_scope)
+                for line in plot_lines.split("\n"):
+                    lines.append(f"  {line}" if line else line)
+        else:
+            # Regular list of plots
+            plots = resolve_value(self.plots, data, scope)
+            for plot in plots:
+                plot_lines = plot.render(data, scope)
+                for line in plot_lines.split("\n"):
+                    lines.append(f"  {line}" if line else line)
 
         # Closing
         lines.append("\\end{groupplot}")

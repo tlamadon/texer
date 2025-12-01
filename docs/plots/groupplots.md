@@ -34,6 +34,8 @@ plot = PGFPlot(
 print(evaluate(plot, {}))
 ```
 
+![Basic 2x2 Grid](images/groupplot_basic.png)
+
 ## Understanding the Structure
 
 ```
@@ -204,6 +206,8 @@ data = {
 print(evaluate(plot, data))
 ```
 
+![Dynamic GroupPlots](images/groupplot_dynamic.png)
+
 ## Multiple Series per Subplot
 
 Each subplot can have multiple data series:
@@ -338,6 +342,8 @@ data = {
 
 print(evaluate(plot, data))
 ```
+
+![Real-World Example](images/groupplot_realworld.png)
 
 ## Legends in GroupPlots
 

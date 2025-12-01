@@ -181,6 +181,10 @@ class Iter(Spec):
                 f"Expected a list, tuple, or other iterable collection."
             )
 
+        # If no template and no x/y specified, return items as-is (passthrough mode)
+        if self.template is None and self.x is None:
+            return list(items)
+
         results = []
         for item in items:
             # Create a new scope with the current item as the data context
@@ -193,7 +197,7 @@ class Iter(Spec):
                 # Template mode: resolve template against each item
                 result = resolve_value(self.template, item, item_scope)
                 results.append(result)
-            elif self.x is not None:
+            else:
                 # Coordinate mode: extract x, y, z from each item
                 x_val = resolve_value(self.x, item, item_scope)
                 y_val = resolve_value(self.y, item, item_scope) if self.y else None
