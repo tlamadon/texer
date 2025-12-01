@@ -70,10 +70,6 @@ plot = PGFPlot(
 print(plot.render({}))
 ```
 
-**Output:**
-
-![Cycle list example](../assets/images/plots/cycle_list.png)
-
 Each dictionary in the cycle list can contain any valid PGFPlots plot options:
 - `color` - Line/marker color
 - `mark` - Marker style (`*`, `square*`, `triangle*`, etc.)

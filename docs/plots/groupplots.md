@@ -34,10 +34,6 @@ plot = PGFPlot(
 print(evaluate(plot, {}))
 ```
 
-**Output:**
-
-![GroupPlot example](../assets/images/plots/groupplot.png)
-
 ## Understanding the Structure
 
 ```

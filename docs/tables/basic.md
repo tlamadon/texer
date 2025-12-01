@@ -44,10 +44,6 @@ table = Table(
 print(evaluate(table, {}))
 ```
 
-**Output:**
-
-![Basic table example](../assets/images/tables/basic_table.png)
-
 <details>
 <summary>LaTeX code</summary>
 

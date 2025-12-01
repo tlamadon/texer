@@ -95,10 +95,6 @@ data = {
 print(evaluate(table, data))
 ```
 
-**Output:**
-
-![Formatted table example](../assets/images/tables/formatted_table.png)
-
 ## Conditional Formatting
 
 Apply formatting based on conditions:

@@ -44,10 +44,6 @@ plot = PGFPlot(
 print(evaluate(plot, {}))
 ```
 
-**Output:**
-
-![Basic plot example](../assets/images/plots/basic_plot.png)
-
 <details>
 <summary>LaTeX code</summary>
 
@@ -259,8 +255,6 @@ plot = PGFPlot(
     )
 )
 ```
-
-![Multiple series example](../assets/images/plots/multiple_series.png)
 
 ### Legend Positions
 
