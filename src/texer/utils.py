@@ -72,6 +72,9 @@ def format_option_value(value: Any) -> str:
         return str(value)
     # Strings get wrapped in braces if they contain spaces or special chars
     s = str(value)
+    # Don't double-wrap if already wrapped in braces
+    if s.startswith("{") and s.endswith("}"):
+        return s
     if " " in s or any(c in s for c in ",=[]"):
         return f"{{{s}}}"
     return s

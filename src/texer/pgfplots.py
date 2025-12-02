@@ -387,6 +387,14 @@ class Axis:
     cycle_list_name: str | Spec | None = None
     cycle_list: list[dict[str, Any]] | list[str] | Spec | None = None
 
+    # Tick positions and labels
+    xtick: list[float | int] | str | Spec | None = None
+    ytick: list[float | int] | str | Spec | None = None
+    ztick: list[float | int] | str | Spec | None = None
+    xticklabels: list[str] | str | Spec | None = None
+    yticklabels: list[str] | str | Spec | None = None
+    zticklabels: list[str] | str | Spec | None = None
+
     # Raw options escape hatch
     _raw_options: str | None = None
 
@@ -475,6 +483,46 @@ class Axis:
                     # Plain string entry
                     cycle_entries.append(str(entry))
             options["cycle list"] = "{" + ",".join(cycle_entries) + "}"
+
+        # Tick positions (resolve if Spec)
+        if self.xtick is not None:
+            xtick_val = resolve_value(self.xtick, data, scope)
+            if isinstance(xtick_val, list):
+                options["xtick"] = "{" + ",".join(str(v) for v in xtick_val) + "}"
+            else:
+                options["xtick"] = xtick_val
+        if self.ytick is not None:
+            ytick_val = resolve_value(self.ytick, data, scope)
+            if isinstance(ytick_val, list):
+                options["ytick"] = "{" + ",".join(str(v) for v in ytick_val) + "}"
+            else:
+                options["ytick"] = ytick_val
+        if self.ztick is not None:
+            ztick_val = resolve_value(self.ztick, data, scope)
+            if isinstance(ztick_val, list):
+                options["ztick"] = "{" + ",".join(str(v) for v in ztick_val) + "}"
+            else:
+                options["ztick"] = ztick_val
+
+        # Tick labels (resolve if Spec)
+        if self.xticklabels is not None:
+            xticklabels_val = resolve_value(self.xticklabels, data, scope)
+            if isinstance(xticklabels_val, list):
+                options["xticklabels"] = "{" + ",".join(str(v) for v in xticklabels_val) + "}"
+            else:
+                options["xticklabels"] = xticklabels_val
+        if self.yticklabels is not None:
+            yticklabels_val = resolve_value(self.yticklabels, data, scope)
+            if isinstance(yticklabels_val, list):
+                options["yticklabels"] = "{" + ",".join(str(v) for v in yticklabels_val) + "}"
+            else:
+                options["yticklabels"] = yticklabels_val
+        if self.zticklabels is not None:
+            zticklabels_val = resolve_value(self.zticklabels, data, scope)
+            if isinstance(zticklabels_val, list):
+                options["zticklabels"] = "{" + ",".join(str(v) for v in zticklabels_val) + "}"
+            else:
+                options["zticklabels"] = zticklabels_val
 
         # Format options
         opts_str = format_options(options, self._raw_options)
@@ -572,6 +620,14 @@ class NextGroupPlot:
     cycle_list_name: str | Spec | None = None
     cycle_list: list[dict[str, Any]] | list[str] | Spec | None = None
 
+    # Tick positions and labels
+    xtick: list[float | int] | str | Spec | None = None
+    ytick: list[float | int] | str | Spec | None = None
+    ztick: list[float | int] | str | Spec | None = None
+    xticklabels: list[str] | str | Spec | None = None
+    yticklabels: list[str] | str | Spec | None = None
+    zticklabels: list[str] | str | Spec | None = None
+
     # Raw options escape hatch
     _raw_options: str | None = None
 
@@ -654,6 +710,46 @@ class NextGroupPlot:
                     # Plain string entry
                     cycle_entries.append(str(entry))
             options["cycle list"] = "{" + ",".join(cycle_entries) + "}"
+
+        # Tick positions (resolve if Spec)
+        if self.xtick is not None:
+            xtick_val = resolve_value(self.xtick, data, scope)
+            if isinstance(xtick_val, list):
+                options["xtick"] = "{" + ",".join(str(v) for v in xtick_val) + "}"
+            else:
+                options["xtick"] = xtick_val
+        if self.ytick is not None:
+            ytick_val = resolve_value(self.ytick, data, scope)
+            if isinstance(ytick_val, list):
+                options["ytick"] = "{" + ",".join(str(v) for v in ytick_val) + "}"
+            else:
+                options["ytick"] = ytick_val
+        if self.ztick is not None:
+            ztick_val = resolve_value(self.ztick, data, scope)
+            if isinstance(ztick_val, list):
+                options["ztick"] = "{" + ",".join(str(v) for v in ztick_val) + "}"
+            else:
+                options["ztick"] = ztick_val
+
+        # Tick labels (resolve if Spec)
+        if self.xticklabels is not None:
+            xticklabels_val = resolve_value(self.xticklabels, data, scope)
+            if isinstance(xticklabels_val, list):
+                options["xticklabels"] = "{" + ",".join(str(v) for v in xticklabels_val) + "}"
+            else:
+                options["xticklabels"] = xticklabels_val
+        if self.yticklabels is not None:
+            yticklabels_val = resolve_value(self.yticklabels, data, scope)
+            if isinstance(yticklabels_val, list):
+                options["yticklabels"] = "{" + ",".join(str(v) for v in yticklabels_val) + "}"
+            else:
+                options["yticklabels"] = yticklabels_val
+        if self.zticklabels is not None:
+            zticklabels_val = resolve_value(self.zticklabels, data, scope)
+            if isinstance(zticklabels_val, list):
+                options["zticklabels"] = "{" + ",".join(str(v) for v in zticklabels_val) + "}"
+            else:
+                options["zticklabels"] = zticklabels_val
 
         # Format options
         opts_str = format_options(options, self._raw_options)

@@ -1,5 +1,8 @@
 # texer
 
+[![PyPI version](https://badge.fury.io/py/texer.svg)](https://pypi.org/project/texer/)
+[![Documentation](https://img.shields.io/badge/docs-GitHub%20Pages-blue)](https://tlamadon.github.io/texer)
+
 Generate LaTeX tables and figures (PGFPlots) with Python using a glom-style spec system.
 
 ## Installation
@@ -146,7 +149,7 @@ plot = PGFPlot(
 
 ## Documentation
 
-For complete documentation, visit: **[Documentation Site](https://your-docs-url.com)**
+For complete documentation, visit: **[Documentation Site](https://tlamadon.github.io/texer)**
 
 Or build the docs locally:
 

@@ -745,7 +745,7 @@ class TestCycleList:
             ],
         )
         result = axis.render({})
-        assert "cycle list={{blue,red,green}}" in result
+        assert "cycle list={blue,red,green}" in result
 
     def test_cycle_list_with_ref(self):
         """Test cycle list with dynamic data from Ref."""
@@ -970,3 +970,151 @@ class TestLegendOptions:
         result = axis.render(data)
         assert "legend cell align=center" in result
         assert "legend columns=2" in result
+
+
+class TestTickOptions:
+    def test_axis_xtick_list(self):
+        """Test setting xtick as a list of values."""
+        axis = Axis(
+            xtick=[0, 1, 2, 3],
+            plots=[],
+        )
+        result = axis.render({})
+        assert "xtick={0,1,2,3}" in result
+
+    def test_axis_ytick_list(self):
+        """Test setting ytick as a list of values."""
+        axis = Axis(
+            ytick=[0, 0.5, 1, 1.5, 2],
+            plots=[],
+        )
+        result = axis.render({})
+        assert "ytick={0,0.5,1,1.5,2}" in result
+
+    def test_axis_ztick_list(self):
+        """Test setting ztick as a list of values."""
+        axis = Axis(
+            ztick=[10, 20, 30],
+            plots=[],
+        )
+        result = axis.render({})
+        assert "ztick={10,20,30}" in result
+
+    def test_axis_tick_string(self):
+        """Test setting tick as a string (e.g., 'data' or special values)."""
+        axis = Axis(
+            xtick="data",
+            plots=[],
+        )
+        result = axis.render({})
+        assert "xtick=data" in result
+
+    def test_axis_xticklabels_list(self):
+        """Test setting xticklabels as a list of strings."""
+        axis = Axis(
+            xtick=[0, 1, 2],
+            xticklabels=["A", "B", "C"],
+            plots=[],
+        )
+        result = axis.render({})
+        assert "xtick={0,1,2}" in result
+        assert "xticklabels={A,B,C}" in result
+
+    def test_axis_yticklabels_list(self):
+        """Test setting yticklabels as a list of strings."""
+        axis = Axis(
+            ytick=[0, 50, 100],
+            yticklabels=["Low", "Medium", "High"],
+            plots=[],
+        )
+        result = axis.render({})
+        assert "ytick={0,50,100}" in result
+        assert "yticklabels={Low,Medium,High}" in result
+
+    def test_axis_ticklabels_string(self):
+        """Test setting ticklabels as a string (special value)."""
+        axis = Axis(
+            xticklabels="\\empty",
+            plots=[],
+        )
+        result = axis.render({})
+        assert "xticklabels=\\empty" in result
+
+    def test_axis_tick_with_ref(self):
+        """Test tick positions with dynamic data from Ref."""
+        axis = Axis(
+            xtick=Ref("x_ticks"),
+            xticklabels=Ref("x_labels"),
+            plots=[],
+        )
+        data = {
+            "x_ticks": [0, 1, 2],
+            "x_labels": ["Jan", "Feb", "Mar"],
+        }
+        result = axis.render(data)
+        assert "xtick={0,1,2}" in result
+        assert "xticklabels={Jan,Feb,Mar}" in result
+
+    def test_nextgroupplot_xtick(self):
+        """Test tick positions in NextGroupPlot."""
+        plot = NextGroupPlot(
+            xtick=[0, 5, 10],
+            xticklabels=["Start", "Mid", "End"],
+            plots=[AddPlot(coords=Coordinates([(0, 0), (5, 5), (10, 10)]))],
+        )
+        result = plot.render({})
+        assert "xtick={0,5,10}" in result
+        assert "xticklabels={Start,Mid,End}" in result
+
+    def test_nextgroupplot_ytick(self):
+        """Test y-axis tick positions in NextGroupPlot."""
+        plot = NextGroupPlot(
+            ytick=[0, 25, 50, 75, 100],
+            yticklabels=["0%", "25%", "50%", "75%", "100%"],
+            plots=[],
+        )
+        result = plot.render({})
+        assert "ytick={0,25,50,75,100}" in result
+        assert "yticklabels={0%,25%,50%,75%,100%}" in result
+
+    def test_complete_plot_with_ticks(self):
+        """Test complete PGFPlot with tick customization."""
+        plot = PGFPlot(
+            Axis(
+                xlabel="Month",
+                ylabel="Value",
+                xtick=[1, 2, 3, 4],
+                xticklabels=["Q1", "Q2", "Q3", "Q4"],
+                ytick=[0, 50, 100],
+                yticklabels=["Low", "Mid", "High"],
+                plots=[AddPlot(coords=Coordinates([(1, 25), (2, 50), (3, 75), (4, 100)]))],
+            )
+        )
+        result = plot.render({})
+        assert "\\begin{tikzpicture}" in result
+        assert "xtick={1,2,3,4}" in result
+        assert "xticklabels={Q1,Q2,Q3,Q4}" in result
+        assert "ytick={0,50,100}" in result
+        assert "yticklabels={Low,Mid,High}" in result
+        assert "\\end{tikzpicture}" in result
+
+    def test_groupplot_with_ticks(self):
+        """Test GroupPlot with custom ticks in subplots."""
+        groupplot = GroupPlot(
+            group_size="1 by 2",
+            plots=[
+                NextGroupPlot(
+                    xtick=[0, 1, 2],
+                    xticklabels=["A", "B", "C"],
+                    plots=[AddPlot(coords=Coordinates([(0, 1), (1, 2), (2, 3)]))],
+                ),
+                NextGroupPlot(
+                    xtick=[0, 1, 2],
+                    xticklabels=["X", "Y", "Z"],
+                    plots=[AddPlot(coords=Coordinates([(0, 3), (1, 2), (2, 1)]))],
+                ),
+            ],
+        )
+        result = groupplot.render({})
+        assert "xticklabels={A,B,C}" in result
+        assert "xticklabels={X,Y,Z}" in result
