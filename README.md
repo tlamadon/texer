@@ -87,6 +87,28 @@ data = {
 print(evaluate(plot, data))
 ```
 
+### Saving and Compiling
+
+Save to file and compile to PDF directly:
+
+```python
+from texer import Table, Tabular, Row, evaluate
+
+table = Table(
+    Tabular(columns="lc", rows=[Row("Name", "Value")]),
+    caption="Results",
+)
+
+# Save to .tex file
+evaluate(table, output_file="table.tex")
+
+# Save with preamble for standalone compilation
+evaluate(table, output_file="table.tex", with_preamble=True)
+
+# Compile directly to PDF
+pdf_path = evaluate(table, output_file="table.tex", compile=True)
+```
+
 ### Cycle Lists
 
 PGFPlots cycle lists allow you to define a sequence of styles that are automatically applied to successive `\addplot` commands. When using cycle lists, `AddPlot` automatically generates `\addplot+` (instead of `\addplot`) when no explicit styling is provided, allowing PGFPlots to pick the next style from the cycle list:
@@ -167,7 +189,7 @@ Then open http://127.0.0.1:8000
 - **Glom-style specs**: Familiar pattern for data extraction
 - **LaTeX best practices**: Automatic escaping, booktabs tables
 - **NumPy integration**: Direct support for NumPy arrays
-- **PDF compilation**: Built-in `compile_to_pdf()` method
+- **PDF compilation**: Built-in `compile=True` option in `evaluate()`
 
 ## Core Concepts
 

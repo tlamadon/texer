@@ -71,6 +71,10 @@ def evaluate(
     scope: dict[str, Any] | None = None,
     escape: bool = True,
     header: bool = True,
+    output_file: str | None = None,
+    with_preamble: bool = False,
+    compile: bool = False,
+    output_dir: str | None = None,
 ) -> str:
     """Evaluate an element and return LaTeX string.
 
@@ -82,26 +86,100 @@ def evaluate(
         scope: Additional scope variables.
         escape: Whether to escape LaTeX special characters in strings.
         header: Whether to include a header comment with creation date and git SHA.
+        output_file: Optional path to save the LaTeX output to a file.
+        with_preamble: Whether to include document preamble for standalone compilation.
+        compile: Whether to compile the output to PDF using pdflatex (requires output_file).
+        output_dir: Optional output directory for PDF compilation (default: same as output_file).
 
     Returns:
-        LaTeX string representation.
+        LaTeX string representation (or path to PDF if compile=True).
+
+    Raises:
+        RuntimeError: If compile=True and pdflatex is not available or compilation fails.
+        ValueError: If compile=True but output_file is not specified.
 
     Examples:
         >>> from texer import Ref, Table, Tabular, Row
         >>> data = {"name": "Alice", "value": 42}
         >>> evaluate(Ref("name"), data)
         'Alice'
+
+        # Save to file with preamble
+        >>> evaluate(table, output_file="my_table.tex", with_preamble=True)
+
+        # Save and compile to PDF
+        >>> pdf_path = evaluate(table, output_file="my_table.tex", with_preamble=True, compile=True)
     """
+    import shutil
+    from pathlib import Path
+
+    if compile and output_file is None:
+        raise ValueError("output_file is required when compile=True")
+
+    if compile and not with_preamble:
+        # Automatically enable preamble when compiling
+        with_preamble = True
+
     if data is None:
         data = {}
 
     if scope is None:
         scope = {}
 
-    result = _evaluate_impl(element, data, scope, escape)
+    if with_preamble:
+        # For elements with with_preamble method (like PGFPlot), use it
+        if hasattr(element, "with_preamble"):
+            result: str = element.with_preamble(data)
+        else:
+            # Render content and wrap with preamble
+            content = _evaluate_impl(element, data, scope, escape)
+            result = _wrap_with_preamble(element, content, data)
+    else:
+        result = _evaluate_impl(element, data, scope, escape)
 
     if header:
         result = _generate_header() + result
+
+    if output_file is not None:
+        with open(output_file, "w", encoding="utf-8") as f:
+            f.write(result)
+
+    if compile:
+        # Check if pdflatex is available
+        if shutil.which("pdflatex") is None:
+            raise RuntimeError(
+                "pdflatex not found. Please install a LaTeX distribution (e.g., TeX Live, MiKTeX)."
+            )
+
+        # Determine paths
+        tex_path = Path(output_file).resolve()  # type: ignore[arg-type]
+        compile_output_path: Path
+        if output_dir is None:
+            compile_output_path = tex_path.parent
+        else:
+            compile_output_path = Path(output_dir).resolve()
+
+        # Run pdflatex
+        try:
+            subprocess.run(
+                [
+                    "pdflatex",
+                    "-interaction=nonstopmode",
+                    f"-output-directory={compile_output_path}",
+                    str(tex_path),
+                ],
+                capture_output=True,
+                text=True,
+                check=True,
+            )
+        except subprocess.CalledProcessError as e:
+            raise RuntimeError(
+                f"pdflatex compilation failed:\n{e.stderr}\n\nOutput:\n{e.stdout}"
+            ) from e
+
+        # Return path to PDF
+        pdf_path = compile_output_path / tex_path.with_suffix(".pdf").name
+        return str(pdf_path)
 
     return result
 
@@ -220,123 +298,3 @@ def _wrap_with_preamble(element: Any, content: str, data: Any) -> str:
     return "\n".join(preamble + [content] + closing)
 
 
-def save_to_file(
-    element: Any,
-    file_path: str,
-    data: Any = None,
-    with_preamble: bool = True,
-    header: bool = True,
-) -> None:
-    """Save an element to a LaTeX file.
-
-    Args:
-        element: The element to save (Table, PGFPlot, Tabular, etc.).
-        file_path: Path to the output .tex file.
-        data: Optional data dict for rendering (default: empty dict).
-        with_preamble: Whether to include document preamble for standalone compilation (default: True).
-        header: Whether to include a header comment with creation date and git SHA (default: True).
-
-    Examples:
-        # Save a table with preamble
-        save_to_file(table, "my_table.tex")
-
-        # Save just the table content (no preamble)
-        save_to_file(table, "my_table.tex", with_preamble=False)
-
-        # Save a plot with data
-        save_to_file(plot, "my_plot.tex", data=my_data)
-    """
-    if data is None:
-        data = {}
-
-    if with_preamble:
-        # For elements with with_preamble method, use it
-        if hasattr(element, "with_preamble"):
-            latex_code = element.with_preamble(data)
-        else:
-            # Render content and wrap with preamble
-            content = _evaluate_impl(element, data, {}, escape=True)
-            latex_code = _wrap_with_preamble(element, content, data)
-    else:
-        latex_code = _evaluate_impl(element, data, {}, escape=True)
-
-    if header:
-        latex_code = _generate_header() + latex_code
-
-    with open(file_path, "w", encoding="utf-8") as f:
-        f.write(latex_code)
-
-
-def compile_to_pdf(
-    element: Any,
-    tex_file_path: str,
-    data: Any = None,
-    output_dir: str | None = None,
-    header: bool = True,
-) -> str:
-    """Save an element to .tex file and compile to PDF using pdflatex.
-
-    Args:
-        element: The element to compile (Table, PGFPlot, Tabular, etc.).
-        tex_file_path: Path to save the .tex file (e.g., "my_table.tex").
-        data: Optional data dict for rendering (default: empty dict).
-        output_dir: Optional output directory for compilation (default: same as .tex file).
-        header: Whether to include a header comment with creation date and git SHA (default: True).
-
-    Returns:
-        Path to the generated PDF file.
-
-    Raises:
-        RuntimeError: If pdflatex is not available or compilation fails.
-
-    Examples:
-        # Compile a table to PDF
-        pdf_path = compile_to_pdf(table, "my_table.tex")
-
-        # Compile a plot with data
-        pdf_path = compile_to_pdf(plot, "my_plot.tex", data=my_data)
-
-        # Specify output directory
-        pdf_path = compile_to_pdf(table, "my_table.tex", output_dir="/tmp")
-    """
-    import shutil
-    from pathlib import Path
-
-    # Check if pdflatex is available
-    if shutil.which("pdflatex") is None:
-        raise RuntimeError(
-            "pdflatex not found. Please install a LaTeX distribution (e.g., TeX Live, MiKTeX)."
-        )
-
-    # Save to file with preamble
-    save_to_file(element, tex_file_path, data=data, with_preamble=True, header=header)
-
-    # Determine paths
-    tex_path = Path(tex_file_path).resolve()
-    output_path: Path
-    if output_dir is None:
-        output_path = tex_path.parent
-    else:
-        output_path = Path(output_dir).resolve()
-
-    # Run pdflatex
-    try:
-        result = subprocess.run(
-            [
-                "pdflatex",
-                "-interaction=nonstopmode",
-                f"-output-directory={output_path}",
-                str(tex_path),
-            ],
-            capture_output=True,
-            text=True,
-            check=True,
-        )
-    except subprocess.CalledProcessError as e:
-        raise RuntimeError(
-            f"pdflatex compilation failed:\n{e.stderr}\n\nOutput:\n{e.stdout}"
-        ) from e
-
-    # Return path to PDF
-    pdf_path = output_path / tex_path.with_suffix(".pdf").name
-    return str(pdf_path)

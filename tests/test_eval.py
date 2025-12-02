@@ -5,7 +5,7 @@ import re
 import tempfile
 from unittest.mock import patch
 
-from texer.eval import evaluate, save_to_file, compile_to_pdf, _generate_header, _get_git_sha, _get_version
+from texer.eval import evaluate, _generate_header, _get_git_sha, _get_version
 from texer import Table, Tabular, Row, PGFPlot, Axis, AddPlot, Coordinates
 
 
@@ -80,7 +80,7 @@ class TestHeader:
             assert line.startswith("%"), f"Line should be a LaTeX comment: {line}"
 
 
-class TestSaveToFile:
+class TestEvaluateOutputFile:
     def test_save_table_with_preamble(self):
         """Test saving a table with preamble."""
         table = Table(
@@ -94,7 +94,7 @@ class TestSaveToFile:
 
         with tempfile.TemporaryDirectory() as tmpdir:
             file_path = os.path.join(tmpdir, "test_table.tex")
-            save_to_file(table, file_path, with_preamble=True, header=False)
+            evaluate(table, output_file=file_path, with_preamble=True, header=False)
 
             with open(file_path, "r") as f:
                 content = f.read()
@@ -117,7 +117,7 @@ class TestSaveToFile:
 
         with tempfile.TemporaryDirectory() as tmpdir:
             file_path = os.path.join(tmpdir, "test_table.tex")
-            save_to_file(table, file_path, with_preamble=False, header=False)
+            evaluate(table, output_file=file_path, with_preamble=False, header=False)
 
             with open(file_path, "r") as f:
                 content = f.read()
@@ -133,7 +133,7 @@ class TestSaveToFile:
 
         with tempfile.TemporaryDirectory() as tmpdir:
             file_path = os.path.join(tmpdir, "test.tex")
-            save_to_file(table, file_path, header=True)
+            evaluate(table, output_file=file_path, header=True)
 
             with open(file_path, "r") as f:
                 content = f.read()
@@ -148,7 +148,7 @@ class TestSaveToFile:
 
         with tempfile.TemporaryDirectory() as tmpdir:
             file_path = os.path.join(tmpdir, "test.tex")
-            save_to_file(table, file_path, header=False)
+            evaluate(table, output_file=file_path, header=False)
 
             with open(file_path, "r") as f:
                 content = f.read()
@@ -167,7 +167,7 @@ class TestSaveToFile:
 
         with tempfile.TemporaryDirectory() as tmpdir:
             file_path = os.path.join(tmpdir, "test_plot.tex")
-            save_to_file(plot, file_path, with_preamble=True, header=False)
+            evaluate(plot, output_file=file_path, with_preamble=True, header=False)
 
             with open(file_path, "r") as f:
                 content = f.read()
@@ -186,7 +186,7 @@ class TestSaveToFile:
 
         with tempfile.TemporaryDirectory() as tmpdir:
             file_path = os.path.join(tmpdir, "test_tabular.tex")
-            save_to_file(tabular, file_path, with_preamble=True, header=False)
+            evaluate(tabular, output_file=file_path, with_preamble=True, header=False)
 
             with open(file_path, "r") as f:
                 content = f.read()
@@ -208,24 +208,79 @@ class TestSaveToFile:
 
         with tempfile.TemporaryDirectory() as tmpdir:
             file_path = os.path.join(tmpdir, "test.tex")
-            save_to_file(table, file_path, data={"value": "Hello"}, header=False)
+            evaluate(table, data={"value": "Hello"}, output_file=file_path, header=False)
 
             with open(file_path, "r") as f:
                 content = f.read()
 
             assert "Hello" in content
 
-
-class TestCompileToPdf:
-    def test_compile_to_pdf_no_pdflatex(self):
-        """Test that compile_to_pdf raises error when pdflatex is not available."""
+    def test_evaluate_returns_content_when_saving(self):
+        """Test that evaluate returns the content even when saving to file."""
         table = Table(
             Tabular(columns="l", rows=[Row("test")]),
         )
 
-        with patch("shutil.which", return_value=None):
-            try:
-                compile_to_pdf(table, "test.tex")
-                assert False, "Should have raised RuntimeError"
-            except RuntimeError as e:
-                assert "pdflatex not found" in str(e)
+        with tempfile.TemporaryDirectory() as tmpdir:
+            file_path = os.path.join(tmpdir, "test.tex")
+            result = evaluate(table, output_file=file_path, header=False)
+
+            assert "\\begin{table}" in result
+
+            with open(file_path, "r") as f:
+                content = f.read()
+
+            assert result == content
+
+
+class TestCompile:
+    def test_compile_no_pdflatex(self):
+        """Test that compile=True raises error when pdflatex is not available."""
+        table = Table(
+            Tabular(columns="l", rows=[Row("test")]),
+        )
+
+        with tempfile.TemporaryDirectory() as tmpdir:
+            file_path = os.path.join(tmpdir, "test.tex")
+            with patch("shutil.which", return_value=None):
+                try:
+                    evaluate(table, output_file=file_path, compile=True)
+                    assert False, "Should have raised RuntimeError"
+                except RuntimeError as e:
+                    assert "pdflatex not found" in str(e)
+
+    def test_compile_requires_output_file(self):
+        """Test that compile=True requires output_file."""
+        table = Table(
+            Tabular(columns="l", rows=[Row("test")]),
+        )
+
+        try:
+            evaluate(table, compile=True)
+            assert False, "Should have raised ValueError"
+        except ValueError as e:
+            assert "output_file is required" in str(e)
+
+    def test_compile_auto_enables_preamble(self):
+        """Test that compile=True automatically enables with_preamble."""
+        table = Table(
+            Tabular(columns="l", rows=[Row("test")]),
+        )
+
+        with tempfile.TemporaryDirectory() as tmpdir:
+            file_path = os.path.join(tmpdir, "test.tex")
+            # Mock pdflatex to avoid actual compilation
+            with patch("shutil.which", return_value="/usr/bin/pdflatex"):
+                with patch("subprocess.run") as mock_run:
+                    mock_run.return_value.returncode = 0
+                    try:
+                        evaluate(table, output_file=file_path, compile=True, header=False)
+                    except Exception:
+                        pass  # May fail due to mock, that's ok
+
+            # Check file was created with preamble
+            with open(file_path, "r") as f:
+                content = f.read()
+
+            assert "\\documentclass{standalone}" in content
+            assert "\\begin{document}" in content

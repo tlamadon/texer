@@ -442,3 +442,154 @@ print(plot.render(data))
 | `legend_cell_align` | str | Text alignment within cells (`"left"`, `"center"`, `"right"`) |
 | `legend_columns` | int | Number of columns in legend layout |
 | `transpose_legend` | bool | Fill legend vertically (by column) instead of horizontally |
+
+## Tick Customization
+
+Control the positions and labels of axis ticks using `xtick`, `ytick`, `ztick` (for 3D plots) and their corresponding label options.
+
+### Setting Tick Positions
+
+Specify exact positions for tick marks:
+
+```python
+from texer import PGFPlot, Axis, AddPlot, Coordinates
+
+plot = PGFPlot(
+    Axis(
+        xlabel="X",
+        ylabel="Y",
+        xtick=[0, 1, 2, 3, 4],  # Explicit x tick positions
+        ytick=[0, 0.5, 1.0],    # Explicit y tick positions
+        plots=[
+            AddPlot(
+                color="blue",
+                coords=Coordinates([(0, 0), (1, 0.5), (2, 0.8), (3, 0.9), (4, 1.0)]),
+            )
+        ],
+    )
+)
+```
+
+This generates:
+
+```latex
+\begin{axis}[xlabel={X}, ylabel={Y}, xtick={0,1,2,3,4}, ytick={0,0.5,1.0}]
+```
+
+### Custom Tick Labels
+
+Override the default tick labels with custom text:
+
+```python
+plot = PGFPlot(
+    Axis(
+        xlabel="Quarter",
+        ylabel="Sales",
+        xtick=[1, 2, 3, 4],
+        xticklabels=["Q1", "Q2", "Q3", "Q4"],  # Custom labels for each tick
+        plots=[
+            AddPlot(
+                color="blue",
+                coords=Coordinates([(1, 100), (2, 150), (3, 200), (4, 180)]),
+            )
+        ],
+    )
+)
+```
+
+### Using Raw LaTeX Strings
+
+For more control, use raw LaTeX strings:
+
+```python
+plot = PGFPlot(
+    Axis(
+        xlabel="$x$",
+        ylabel="$f(x)$",
+        xtick="{0, 0.5*pi, pi, 1.5*pi, 2*pi}",  # Raw LaTeX expression
+        xticklabels="{$0$, $\\frac{\\pi}{2}$, $\\pi$, $\\frac{3\\pi}{2}$, $2\\pi$}",
+        plots=[
+            AddPlot(
+                expression="sin(deg(x))",
+                domain="0:2*pi",
+                samples=100,
+            )
+        ],
+    )
+)
+```
+
+### Dynamic Ticks with Ref
+
+Tick positions and labels can be data-driven:
+
+```python
+from texer import PGFPlot, Axis, AddPlot, Coordinates, Ref
+
+plot = PGFPlot(
+    Axis(
+        xlabel="Category",
+        ylabel="Value",
+        xtick=Ref("tick_positions"),
+        xticklabels=Ref("tick_labels"),
+        plots=[
+            AddPlot(
+                color="blue",
+                coords=Coordinates(Ref("data")),
+            )
+        ],
+    )
+)
+
+data = {
+    "tick_positions": [1, 2, 3],
+    "tick_labels": ["Low", "Medium", "High"],
+    "data": [(1, 10), (2, 25), (3, 15)],
+}
+
+print(plot.render(data))
+```
+
+### Tick Options in GroupPlots
+
+`NextGroupPlot` also supports tick customization for individual subplots:
+
+```python
+from texer import PGFPlot, GroupPlot, NextGroupPlot, AddPlot, Coordinates
+
+plot = PGFPlot(
+    GroupPlot(
+        group_size="2 by 1",
+        plots=[
+            NextGroupPlot(
+                title="First Plot",
+                xtick=[0, 1, 2],
+                xticklabels=["A", "B", "C"],
+                plots=[AddPlot(coords=Coordinates([(0, 1), (1, 2), (2, 1.5)]))]
+            ),
+            NextGroupPlot(
+                title="Second Plot",
+                xtick=[0, 1, 2],
+                xticklabels=["X", "Y", "Z"],
+                plots=[AddPlot(coords=Coordinates([(0, 2), (1, 1), (2, 3)]))]
+            ),
+        ],
+    )
+)
+```
+
+### Available Tick Options
+
+| Option | Type | Description |
+|--------|------|-------------|
+| `xtick` | list or str | X-axis tick positions |
+| `ytick` | list or str | Y-axis tick positions |
+| `ztick` | list or str | Z-axis tick positions (3D plots) |
+| `xticklabels` | list or str | Custom labels for x-axis ticks |
+| `yticklabels` | list or str | Custom labels for y-axis ticks |
+| `zticklabels` | list or str | Custom labels for z-axis ticks (3D plots) |
+
+All tick options accept:
+- A Python list: `[0, 1, 2, 3]` or `["A", "B", "C"]`
+- A raw LaTeX string: `"{0, 0.5, 1}"` or `"{$\\alpha$, $\\beta$}"`
+- A `Ref` spec for data-driven values
