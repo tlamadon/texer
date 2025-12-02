@@ -915,7 +915,7 @@ class GroupPlot:
         if isinstance(self.plots, Iter):
             # Resolve the Iter source to get items
             if isinstance(self.plots.source, str):
-                import glom  # type: ignore[import-untyped]
+                import glom
                 items = glom.glom(data, self.plots.source)
             elif isinstance(self.plots.source, Spec):
                 items = self.plots.source.resolve(data, scope)
