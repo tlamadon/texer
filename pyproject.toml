@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "texer"
-version = "0.4.4"
+version = "0.5.0"
 description = "Generate LaTeX tables and figures with glom-style specs"
 readme = "README.md"
 license = "MIT"
