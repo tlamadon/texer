@@ -61,6 +61,10 @@ class Coordinates:
         # Dynamic coordinates from data
         Coordinates(Iter(Ref("points"), x=Ref("x"), y=Ref("y")))
 
+        # With marker size data (for scatter plots)
+        Coordinates(x=[0, 1, 2], y=[1, 2, 4], marker_size=[5, 10, 15])
+        Coordinates(Iter(Ref("points"), x=Ref("x"), y=Ref("y"), marker_size=Ref("size")))
+
         # Control precision (default 6 significant figures)
         Coordinates(x=[0.123456789], y=[0.987654321])  # Outputs (0.123457, 0.987654)
         Coordinates(x=[0.123456789], y=[0.987654321], precision=3)  # Outputs (0.123, 0.988)
@@ -71,6 +75,7 @@ class Coordinates:
     x: Any = None
     y: Any = None
     z: Any = None
+    marker_size: Any = None  # For data-driven marker sizes
     precision: int | None = 6  # Number of significant figures (None = no rounding)
 
     def __post_init__(self) -> None:
@@ -93,7 +98,8 @@ class Coordinates:
             x_resolved = resolve_value(self.x, data, scope)
             y_resolved = resolve_value(self.y, data, scope)
             z_resolved = resolve_value(self.z, data, scope) if self.z is not None else None
-            points = self._arrays_to_points_resolved(x_resolved, y_resolved, z_resolved)
+            marker_size_resolved = resolve_value(self.marker_size, data, scope) if self.marker_size is not None else None
+            points = self._arrays_to_points_resolved(x_resolved, y_resolved, z_resolved, marker_size_resolved)
         # Resolve the source
         elif isinstance(self.source, (Iter, Spec)):
             points = self.source.resolve(data, scope)
@@ -112,21 +118,39 @@ class Coordinates:
 
         return "coordinates {" + " ".join(coord_strs) + "}"
 
-    def _arrays_to_points_resolved(self, x: Any, y: Any, z: Any = None) -> list[tuple[Any, ...]]:
-        """Convert resolved x, y, z arrays to list of tuples."""
+    def _arrays_to_points_resolved(self, x: Any, y: Any, z: Any = None, marker_size: Any = None) -> list[tuple[Any, ...]]:
+        """Convert resolved x, y, z, marker_size arrays to list of tuples."""
         # Convert to lists if numpy arrays
         x_list = self._to_list(x)
         y_list = self._to_list(y)
 
         if z is not None:
             z_list = self._to_list(z)
-            if not (len(x_list) == len(y_list) == len(z_list)):
-                raise ValueError(f"x, y, and z must have the same length (got {len(x_list)}, {len(y_list)}, {len(z_list)})")
-            return list(zip(x_list, y_list, z_list))
+            if marker_size is not None:
+                marker_size_list = self._to_list(marker_size)
+                if not (len(x_list) == len(y_list) == len(z_list) == len(marker_size_list)):
+                    raise ValueError(
+                        f"x, y, z, and marker_size must have the same length "
+                        f"(got {len(x_list)}, {len(y_list)}, {len(z_list)}, {len(marker_size_list)})"
+                    )
+                return list(zip(x_list, y_list, z_list, marker_size_list))
+            else:
+                if not (len(x_list) == len(y_list) == len(z_list)):
+                    raise ValueError(f"x, y, and z must have the same length (got {len(x_list)}, {len(y_list)}, {len(z_list)})")
+                return list(zip(x_list, y_list, z_list))
         else:
-            if len(x_list) != len(y_list):
-                raise ValueError(f"x and y must have the same length (got {len(x_list)}, {len(y_list)})")
-            return list(zip(x_list, y_list))
+            if marker_size is not None:
+                marker_size_list = self._to_list(marker_size)
+                if not (len(x_list) == len(y_list) == len(marker_size_list)):
+                    raise ValueError(
+                        f"x, y, and marker_size must have the same length "
+                        f"(got {len(x_list)}, {len(y_list)}, {len(marker_size_list)})"
+                    )
+                return list(zip(x_list, y_list, marker_size_list))
+            else:
+                if len(x_list) != len(y_list):
+                    raise ValueError(f"x and y must have the same length (got {len(x_list)}, {len(y_list)})")
+                return list(zip(x_list, y_list))
 
     @staticmethod
     def _to_list(arr: Any) -> list[Any]:
@@ -179,6 +203,13 @@ class AddPlot:
             domain="0:10",
             expression="x^2"
         )
+
+        # Scatter plot with data-driven marker sizes
+        AddPlot(
+            scatter=True,
+            only_marks=True,
+            coords=Coordinates(x=[0, 1, 2], y=[1, 2, 4], marker_size=[5, 10, 15])
+        )
     """
 
     # Coordinate-based plot
@@ -192,12 +223,17 @@ class AddPlot:
     # Style options
     color: ColorName | str | Spec | None = None
     mark: MarkStyle | str | Spec | None = None
+    mark_size: str | float | Spec | None = None  # Static marker size (e.g., "3pt" or 3)
     style: LineStyle | str | Spec | None = None
     line_width: str | Spec | None = None
     only_marks: bool | Spec = False
     no_marks: bool | Spec = False
     smooth: bool | Spec = False
     thick: bool | Spec = False
+
+    # Scatter plot options (for data-driven marker sizes)
+    scatter: bool | Spec = False
+    scatter_src: str | Spec | None = None  # Which coordinate controls marker size ("explicit" uses meta column)
 
     # Plot name for legend
     name: str | Spec | None = None
@@ -229,6 +265,13 @@ class AddPlot:
             options["color"] = resolve_value(self.color, data, scope)
         if self.mark:
             options["mark"] = resolve_value(self.mark, data, scope)
+        if self.mark_size:
+            mark_size_val = resolve_value(self.mark_size, data, scope)
+            # If numeric, add pt unit; otherwise use as-is
+            if isinstance(mark_size_val, (int, float)):
+                options["mark size"] = f"{mark_size_val}pt"
+            else:
+                options["mark size"] = mark_size_val
         if self.style:
             resolved_style = resolve_value(self.style, data, scope)
             options[resolved_style] = True
@@ -251,12 +294,38 @@ class AddPlot:
         if self.mesh:
             options["mesh"] = True
 
+        # Scatter plot options
+        scatter_enabled = resolve_value(self.scatter, data, scope) if isinstance(self.scatter, Spec) else self.scatter
+
+        # Check if coordinates have marker_size data
+        has_marker_size_data = False
+        if self.coords:
+            # Check if marker_size is directly on Coordinates object (x/y/marker_size style)
+            if self.coords.marker_size is not None:
+                has_marker_size_data = True
+            # Check if source is an Iter with marker_size (Iter style)
+            elif isinstance(self.coords.source, Iter) and self.coords.source.marker_size is not None:
+                has_marker_size_data = True
+
+        if scatter_enabled:
+            options["scatter"] = True
+            if self.scatter_src:
+                scatter_src_val = resolve_value(self.scatter_src, data, scope)
+                options["scatter src"] = scatter_src_val
+            # If coordinates have marker_size data and scatter_src not explicitly set,
+            # use "explicit" mode (meta data from coordinates)
+            elif has_marker_size_data:
+                options["scatter src"] = "explicit"
+                # Add visualization depends on to map meta to mark size
+                options["visualization depends on"] = r"{\thisrow{meta} \as \perpointmarksize}"
+                options["scatter/@pre marker code/.append style"] = "{/tikz/mark size=\\perpointmarksize}"
+
         # 3D variant
         base_cmd = "\\addplot3" if self.surf or self.mesh else "\\addplot"
 
         # Check if we should use cycle list automatically
         # Use + if use_cycle_list is explicitly set, OR if there are no color/mark/style options
-        has_style_options = bool(self.color or self.mark or self.style or self.line_width)
+        has_style_options = bool(self.color or self.mark or self.style or self.line_width or self.mark_size)
         should_use_cycle = self.use_cycle_list or not has_style_options
 
         # Add + for cycle list usage
@@ -1202,5 +1271,65 @@ def simple_plot(
             ylabel=ylabel,
             title=title,
             plots=[AddPlot(color=color, mark=mark, coords=coords)],
+        )
+    )
+
+
+# Helper for creating scatter plots with data-driven marker sizes
+def scatter_plot(
+    x: list[float],
+    y: list[float],
+    marker_size: list[float],
+    xlabel: str = "x",
+    ylabel: str = "y",
+    title: str | None = None,
+    color: str = "blue",
+    mark: str = "*",
+    precision: int | None = 6,
+) -> PGFPlot:
+    """Create a scatter plot with data-driven marker sizes (bubble chart).
+
+    Args:
+        x: X-axis data points.
+        y: Y-axis data points.
+        marker_size: Marker size for each data point (in pt units).
+        xlabel: Label for x-axis.
+        ylabel: Label for y-axis.
+        title: Optional plot title.
+        color: Marker color.
+        mark: Marker style.
+        precision: Number of significant figures for coordinates (default: 6, None for no rounding).
+
+    Returns:
+        A PGFPlot object ready for rendering.
+
+    Examples:
+        # Create a bubble chart
+        plot = scatter_plot(
+            x=[1, 2, 3, 4, 5],
+            y=[2, 4, 3, 5, 4],
+            marker_size=[5, 10, 15, 20, 25],
+            xlabel="X Value",
+            ylabel="Y Value",
+            title="Bubble Chart"
+        )
+        print(plot.render({}))
+    """
+    coords = Coordinates(x=x, y=y, marker_size=marker_size, precision=precision)
+
+    return PGFPlot(
+        Axis(
+            xlabel=xlabel,
+            ylabel=ylabel,
+            title=title,
+            plots=[
+                AddPlot(
+                    color=color,
+                    mark=mark,
+                    only_marks=True,
+                    scatter=True,
+                    coords=coords,
+                )
+            ],
         )
     )

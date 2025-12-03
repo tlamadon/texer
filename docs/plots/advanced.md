@@ -594,6 +594,301 @@ All tick options accept:
 - A raw LaTeX string: `"{0, 0.5, 1}"` or `"{$\\alpha$, $\\beta$}"`
 - A `Ref` spec for data-driven values
 
+## Marker Size Control
+
+Control the size of plot markers either uniformly across all points or individually based on your data. This is useful for creating bubble charts where marker size represents a third dimension of data.
+
+### Static Marker Sizes
+
+Set a uniform marker size for all points in a plot using the `mark_size` parameter:
+
+```python
+from texer import PGFPlot, Axis, AddPlot, Coordinates
+
+plot = PGFPlot(
+    Axis(
+        xlabel="X",
+        ylabel="Y",
+        title="Static Marker Size",
+        grid=True,
+        plots=[
+            AddPlot(
+                color="blue",
+                mark="*",
+                mark_size=5,  # All markers will be 5pt
+                only_marks=True,
+                coords=Coordinates(x=[1, 2, 3, 4, 5], y=[2, 4, 3, 5, 4]),
+            )
+        ],
+    )
+)
+
+print(plot.render({}))
+```
+
+The `mark_size` parameter accepts:
+- Numeric values (automatically converted to pt units): `mark_size=5` → `5pt`
+- String values with units: `mark_size="3mm"` or `mark_size="0.5cm"`
+
+### Multiple Series with Different Sizes
+
+Create plots with multiple series, each having different marker sizes:
+
+```python
+from texer import PGFPlot, Axis, AddPlot, Coordinates
+
+plot = PGFPlot(
+    Axis(
+        xlabel="X",
+        ylabel="Y",
+        title="Multiple Series with Different Sizes",
+        legend_pos="north west",
+        plots=[
+            AddPlot(
+                color="blue",
+                mark="*",
+                mark_size=3,
+                only_marks=True,
+                coords=Coordinates(x=[1, 2, 3, 4, 5], y=[2, 4, 3, 5, 4]),
+            ),
+            AddPlot(
+                color="red",
+                mark="square*",
+                mark_size=6,
+                only_marks=True,
+                coords=Coordinates(x=[1, 2, 3, 4, 5], y=[3, 2, 4, 3, 5]),
+            ),
+            AddPlot(
+                color="green",
+                mark="triangle*",
+                mark_size=9,
+                only_marks=True,
+                coords=Coordinates(x=[1, 2, 3, 4, 5], y=[4, 5, 2, 4, 3]),
+            ),
+        ],
+        legend=["Small (3pt)", "Medium (6pt)", "Large (9pt)"],
+    )
+)
+
+print(plot.render({}))
+```
+
+### Data-Driven Marker Sizes (Bubble Charts)
+
+For bubble charts, control each marker's size individually based on your data. This requires enabling scatter mode:
+
+```python
+from texer import PGFPlot, Axis, AddPlot, Coordinates
+
+plot = PGFPlot(
+    Axis(
+        xlabel="X Position",
+        ylabel="Y Position",
+        title="Bubble Chart",
+        grid=True,
+        plots=[
+            AddPlot(
+                color="red",
+                mark="*",
+                only_marks=True,
+                scatter=True,  # Enable scatter mode
+                coords=Coordinates(
+                    x=[1, 2, 3, 4, 5],
+                    y=[2, 4, 3, 5, 4],
+                    marker_size=[5, 10, 15, 20, 25]  # Different size for each point
+                ),
+            )
+        ],
+    )
+)
+
+print(plot.render({}))
+```
+
+This generates coordinates with a third value (the marker size) for each point:
+
+```latex
+\addplot[..., scatter, scatter src=explicit,
+  visualization depends on={\thisrow{meta} \as \perpointmarksize},
+  scatter/@pre marker code/.append style={/tikz/mark size=\perpointmarksize}
+] coordinates {(1, 2, 5) (2, 4, 10) (3, 3, 15) (4, 5, 20) (5, 4, 25)};
+```
+
+### Quick Bubble Charts with scatter_plot()
+
+Use the convenience function for creating bubble charts with minimal code:
+
+```python
+from texer import scatter_plot
+
+plot = scatter_plot(
+    x=[1, 2, 3, 4, 5],
+    y=[2, 4, 3, 5, 4],
+    marker_size=[5, 10, 15, 20, 25],
+    xlabel="X Value",
+    ylabel="Y Value",
+    title="Easy Bubble Chart",
+    color="green",
+    mark="o"
+)
+
+print(plot.render({}))
+```
+
+The `scatter_plot()` helper automatically:
+- Enables scatter mode
+- Sets `only_marks=True`
+- Configures the marker size visualization
+
+### Dynamic Marker Sizes from Data
+
+Marker sizes can be data-driven using `Ref` and `Iter`:
+
+```python
+from texer import PGFPlot, Axis, AddPlot, Coordinates, Ref, Iter
+
+plot = PGFPlot(
+    Axis(
+        xlabel="Time (s)",
+        ylabel="Performance",
+        title=Ref("plot_title"),
+        grid=True,
+        plots=[
+            AddPlot(
+                color="blue",
+                mark="*",
+                only_marks=True,
+                scatter=True,
+                coords=Coordinates(
+                    Iter(
+                        Ref("measurements"),
+                        x=Ref("time"),
+                        y=Ref("perf"),
+                        marker_size=Ref("importance")
+                    )
+                ),
+            )
+        ],
+    )
+)
+
+data = {
+    "plot_title": "Performance Over Time (size = importance)",
+    "measurements": [
+        {"time": 0, "perf": 50, "importance": 5},
+        {"time": 1, "perf": 60, "importance": 8},
+        {"time": 2, "perf": 55, "importance": 12},
+        {"time": 3, "perf": 70, "importance": 15},
+        {"time": 4, "perf": 65, "importance": 20},
+    ],
+}
+
+print(plot.render(data))
+```
+
+### Marker Size in 3D Plots
+
+Data-driven marker sizes also work with 3D scatter plots:
+
+```python
+from texer import PGFPlot, Axis, AddPlot, Coordinates
+
+plot = PGFPlot(
+    Axis(
+        xlabel="X",
+        ylabel="Y",
+        zlabel="Z",
+        title="3D Bubble Chart",
+        plots=[
+            AddPlot(
+                color="blue",
+                mark="*",
+                only_marks=True,
+                scatter=True,
+                coords=Coordinates(
+                    x=[1, 2, 3],
+                    y=[1, 2, 3],
+                    z=[1, 4, 9],
+                    marker_size=[5, 10, 15]
+                ),
+            )
+        ],
+    )
+)
+```
+
+### Complete Example: Multi-Series Bubble Chart
+
+Combine multiple series with data-driven marker sizes:
+
+```python
+from texer import PGFPlot, Axis, AddPlot, Coordinates, Ref, Iter
+
+plot = PGFPlot(
+    Axis(
+        xlabel="Time (hours)",
+        ylabel="Temperature (°C)",
+        title="Multi-Sensor Temperature Monitoring",
+        legend_pos="north west",
+        grid=True,
+        plots=Iter(
+            Ref("sensors"),
+            template=AddPlot(
+                color=Ref("color"),
+                mark="*",
+                only_marks=True,
+                scatter=True,
+                coords=Coordinates(
+                    Iter(Ref("readings"), x=Ref("time"), y=Ref("temp"), marker_size=Ref("confidence"))
+                ),
+            )
+        ),
+        legend=Iter(Ref("sensors"), template=Ref("name")),
+    )
+)
+
+data = {
+    "sensors": [
+        {
+            "name": "Sensor A (size = confidence)",
+            "color": "blue",
+            "readings": [
+                {"time": 0, "temp": 20, "confidence": 5},
+                {"time": 1, "temp": 22, "confidence": 8},
+                {"time": 2, "temp": 25, "confidence": 12},
+            ],
+        },
+        {
+            "name": "Sensor B (size = confidence)",
+            "color": "red",
+            "readings": [
+                {"time": 0, "temp": 19, "confidence": 7},
+                {"time": 1, "temp": 21, "confidence": 10},
+                {"time": 2, "temp": 24, "confidence": 15},
+            ],
+        },
+    ],
+}
+
+print(plot.render(data))
+```
+
+### Available Marker Size Options
+
+| Option | Context | Type | Description |
+|--------|---------|------|-------------|
+| `mark_size` | `AddPlot` | float, int, or str | Static marker size for all points |
+| `marker_size` | `Coordinates` | list or `Ref` | Individual marker size for each point (requires `scatter=True`) |
+| `scatter` | `AddPlot` | bool | Enable scatter mode for data-driven marker sizes |
+| `scatter_src` | `AddPlot` | str | Control how marker size data is interpreted (default: `"explicit"`) |
+
+### Notes
+
+- Data-driven marker sizes require `scatter=True` in the `AddPlot`
+- The `marker_size` parameter in `Coordinates` adds a third (or fourth for 3D) value to each coordinate
+- Marker sizes are specified in LaTeX pt units by default
+- Static `mark_size` and data-driven `marker_size` are independent features that can't be combined in the same plot
+
 ## Title Style Customization
 
 The `title_style` option allows you to customize the appearance of plot titles with LaTeX/PGFPlots styling options. This is useful for controlling font size, color, alignment, and other typographic properties.

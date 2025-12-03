@@ -142,6 +142,7 @@ class Iter(Spec):
     Examples:
         Iter(Ref("items"), template=Row(Ref("name"), Ref("value")))
         Iter(Ref("points"), x=Ref("x"), y=Ref("y"))  # For coordinates
+        Iter(Ref("points"), x=Ref("x"), y=Ref("y"), marker_size=Ref("size"))  # With marker sizes
     """
 
     source: Spec | str
@@ -151,6 +152,7 @@ class Iter(Spec):
     x: Spec | None = None
     y: Spec | None = None
     z: Spec | None = None
+    marker_size: Spec | None = None  # For data-driven marker sizes
 
     def resolve(self, data: Any, scope: dict[str, Any] | None = None) -> Any:
         """Resolve by iterating over source and applying template."""
@@ -198,13 +200,19 @@ class Iter(Spec):
                 result = resolve_value(self.template, item, item_scope)
                 results.append(result)
             else:
-                # Coordinate mode: extract x, y, z from each item
+                # Coordinate mode: extract x, y, z, marker_size from each item
                 x_val = resolve_value(self.x, item, item_scope)
                 y_val = resolve_value(self.y, item, item_scope) if self.y else None
                 z_val = resolve_value(self.z, item, item_scope) if self.z else None
+                marker_size_val = resolve_value(self.marker_size, item, item_scope) if self.marker_size else None
 
-                if z_val is not None:
+                # Build tuple based on what's present
+                if z_val is not None and marker_size_val is not None:
+                    results.append((x_val, y_val, z_val, marker_size_val))
+                elif z_val is not None:
                     results.append((x_val, y_val, z_val))
+                elif marker_size_val is not None:
+                    results.append((x_val, y_val, marker_size_val))
                 elif y_val is not None:
                     results.append((x_val, y_val))
                 else:
@@ -222,6 +230,8 @@ class Iter(Spec):
             parts.append(f"y={self.y!r}")
         if self.z is not None:
             parts.append(f"z={self.z!r}")
+        if self.marker_size is not None:
+            parts.append(f"marker_size={self.marker_size!r}")
         return f"Iter({', '.join(parts)})"
 
 
