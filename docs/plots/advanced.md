@@ -593,3 +593,215 @@ All tick options accept:
 - A Python list: `[0, 1, 2, 3]` or `["A", "B", "C"]`
 - A raw LaTeX string: `"{0, 0.5, 1}"` or `"{$\\alpha$, $\\beta$}"`
 - A `Ref` spec for data-driven values
+
+## Title Style Customization
+
+The `title_style` option allows you to customize the appearance of plot titles with LaTeX/PGFPlots styling options. This is useful for controlling font size, color, alignment, and other typographic properties.
+
+### Basic Title Styling
+
+Apply custom styling to plot titles:
+
+```python
+from texer import PGFPlot, Axis, AddPlot, Coordinates
+
+plot = PGFPlot(
+    Axis(
+        xlabel="X",
+        ylabel="Y",
+        title="My Styled Title",
+        title_style="font=\\Large,text=blue",
+        plots=[
+            AddPlot(
+                color="blue",
+                coords=Coordinates([(0, 0), (1, 1), (2, 4)]),
+            )
+        ],
+    )
+)
+```
+
+This generates:
+
+```latex
+\begin{axis}[xlabel={X}, ylabel={Y}, title={My Styled Title}, title style={font=\Large,text=blue}]
+```
+
+### Common Title Style Options
+
+You can use any valid PGFPlots/TikZ style options in `title_style`:
+
+```python
+plot = PGFPlot(
+    Axis(
+        title="Experimental Results",
+        title_style="font=\\huge,color=red,align=center",
+        xlabel="Time (s)",
+        ylabel="Value",
+        plots=[
+            AddPlot(coords=Coordinates([(0, 1), (1, 2), (2, 4)])),
+        ],
+    )
+)
+```
+
+Common style options include:
+
+- **Font size**: `font=\\tiny`, `font=\\small`, `font=\\normalsize`, `font=\\large`, `font=\\Large`, `font=\\LARGE`, `font=\\huge`, `font=\\Huge`
+- **Color**: `color=blue`, `text=red`, `text=black!50` (50% black)
+- **Alignment**: `align=center`, `align=left`, `align=right`
+- **Font style**: `font=\\bfseries` (bold), `font=\\itshape` (italic)
+- **Multiple options**: Combine with commas: `font=\\Large\\bfseries,color=blue,align=center`
+
+### Dynamic Title Styling with Ref
+
+Title styles can be data-driven using `Ref`:
+
+```python
+from texer import PGFPlot, Axis, AddPlot, Coordinates, Ref
+
+plot = PGFPlot(
+    Axis(
+        title=Ref("plot_title"),
+        title_style=Ref("title_styling"),
+        xlabel="X",
+        ylabel="Y",
+        plots=[
+            AddPlot(coords=Coordinates([(0, 1), (1, 2), (2, 4)])),
+        ],
+    )
+)
+
+data = {
+    "plot_title": "Dynamic Title",
+    "title_styling": "font=\\huge,color=red",
+}
+
+print(plot.render(data))
+```
+
+### Title Styling in GroupPlots
+
+Each subplot in a `GroupPlot` can have its own title style:
+
+```python
+from texer import PGFPlot, GroupPlot, NextGroupPlot, AddPlot, Coordinates
+
+plot = PGFPlot(
+    GroupPlot(
+        group_size="1 by 2",
+        plots=[
+            NextGroupPlot(
+                title="Left Plot",
+                title_style="font=\\Large,color=blue",
+                plots=[
+                    AddPlot(coords=Coordinates([(0, 1), (1, 2)])),
+                ]
+            ),
+            NextGroupPlot(
+                title="Right Plot",
+                title_style="font=\\Large,color=red",
+                plots=[
+                    AddPlot(coords=Coordinates([(0, 2), (1, 3)])),
+                ]
+            ),
+        ],
+    )
+)
+```
+
+### Advanced Examples
+
+#### Consistent Title Styling Across Multiple Plots
+
+Use a consistent style for all plot titles:
+
+```python
+from texer import PGFPlot, GroupPlot, NextGroupPlot, AddPlot, Coordinates, Ref
+
+# Common style definition
+TITLE_STYLE = "font=\\Large\\bfseries,color=black!80,align=center"
+
+plot = PGFPlot(
+    GroupPlot(
+        group_size="2 by 2",
+        plots=[
+            NextGroupPlot(
+                title="Plot A",
+                title_style=TITLE_STYLE,
+                plots=[AddPlot(coords=Coordinates([(0, 1), (1, 2)]))]
+            ),
+            NextGroupPlot(
+                title="Plot B",
+                title_style=TITLE_STYLE,
+                plots=[AddPlot(coords=Coordinates([(0, 2), (1, 3)]))]
+            ),
+            NextGroupPlot(
+                title="Plot C",
+                title_style=TITLE_STYLE,
+                plots=[AddPlot(coords=Coordinates([(0, 3), (1, 4)]))]
+            ),
+            NextGroupPlot(
+                title="Plot D",
+                title_style=TITLE_STYLE,
+                plots=[AddPlot(coords=Coordinates([(0, 4), (1, 5)]))]
+            ),
+        ],
+    )
+)
+```
+
+#### Data-Driven Title Styling for Multiple Subplots
+
+```python
+from texer import PGFPlot, GroupPlot, NextGroupPlot, AddPlot, Coordinates, Ref, Iter
+
+plot = PGFPlot(
+    GroupPlot(
+        group_size="1 by 2",
+        plots=Iter(
+            Ref("subplots"),
+            template=NextGroupPlot(
+                title=Ref("title"),
+                title_style=Ref("style"),
+                plots=[
+                    AddPlot(
+                        coords=Coordinates(
+                            Iter(Ref("data"), x=Ref("x"), y=Ref("y"))
+                        )
+                    )
+                ],
+            ),
+        ),
+    )
+)
+
+data = {
+    "subplots": [
+        {
+            "title": "Dataset 1",
+            "style": "font=\\Large,color=blue",
+            "data": [{"x": 0, "y": 1}, {"x": 1, "y": 2}, {"x": 2, "y": 4}],
+        },
+        {
+            "title": "Dataset 2",
+            "style": "font=\\Large,color=red",
+            "data": [{"x": 0, "y": 2}, {"x": 1, "y": 3}, {"x": 2, "y": 5}],
+        },
+    ],
+}
+
+print(plot.render(data))
+```
+
+### Available Title Options
+
+| Option | Type | Description |
+|--------|------|-------------|
+| `title` | str or Ref | The title text |
+| `title_style` | str or Ref | LaTeX/PGFPlots styling options for the title |
+
+Both options work in `Axis` and `NextGroupPlot` contexts and support:
+- Static strings
+- `Ref` specs for data-driven values
+- Any valid PGFPlots/TikZ style options

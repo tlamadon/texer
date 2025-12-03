@@ -972,6 +972,95 @@ class TestLegendOptions:
         assert "legend columns=2" in result
 
 
+class TestTitleStyle:
+    def test_axis_title_style_static(self):
+        """Test setting title style with a static string."""
+        axis = Axis(
+            title="My Plot",
+            title_style="font=\\Large,text=blue",
+            plots=[],
+        )
+        result = axis.render({})
+        assert "title={My Plot}" in result
+        assert "title style={font=\\Large,text=blue}" in result
+
+    def test_axis_title_style_with_ref(self):
+        """Test title style with dynamic data from Ref."""
+        axis = Axis(
+            title=Ref("plot_title"),
+            title_style=Ref("title_styling"),
+            plots=[],
+        )
+        data = {
+            "plot_title": "Dynamic Title",
+            "title_styling": "font=\\huge,color=red"
+        }
+        result = axis.render(data)
+        assert "title={Dynamic Title}" in result
+        assert "title style={font=\\huge,color=red}" in result
+
+    def test_nextgroupplot_title_style(self):
+        """Test title style in NextGroupPlot."""
+        plot = NextGroupPlot(
+            title="Subplot 1",
+            title_style="font=\\small,align=center",
+            plots=[AddPlot(coords=Coordinates([(0, 1), (1, 2)]))],
+        )
+        result = plot.render({})
+        assert "title={Subplot 1}" in result
+        assert "title style={font=\\small,align=center}" in result
+
+    def test_groupplot_with_title_style(self):
+        """Test GroupPlot with title style in subplots."""
+        groupplot = GroupPlot(
+            group_size="1 by 2",
+            plots=[
+                NextGroupPlot(
+                    title="Left Plot",
+                    title_style="font=\\Large",
+                    plots=[AddPlot(coords=Coordinates([(0, 1), (1, 2)]))],
+                ),
+                NextGroupPlot(
+                    title="Right Plot",
+                    title_style="font=\\normalsize,color=blue",
+                    plots=[AddPlot(coords=Coordinates([(0, 2), (1, 3)]))],
+                ),
+            ],
+        )
+        result = groupplot.render({})
+        assert "title={Left Plot}" in result
+        assert "title style={font=\\Large}" in result
+        assert "title={Right Plot}" in result
+        assert "title style={font=\\normalsize,color=blue}" in result
+
+    def test_complete_plot_with_title_style(self):
+        """Test complete PGFPlot with title style."""
+        plot = PGFPlot(
+            Axis(
+                title="Styled Title",
+                title_style="font=\\huge,text=blue,align=center",
+                xlabel="X",
+                ylabel="Y",
+                plots=[AddPlot(coords=Coordinates([(0, 0), (1, 1)]))],
+            )
+        )
+        result = plot.render({})
+        assert "\\begin{tikzpicture}" in result
+        assert "title={Styled Title}" in result
+        assert "title style={font=\\huge,text=blue,align=center}" in result
+        assert "\\end{tikzpicture}" in result
+
+    def test_title_without_style(self):
+        """Test that title works without title_style (backward compatibility)."""
+        axis = Axis(
+            title="Simple Title",
+            plots=[],
+        )
+        result = axis.render({})
+        assert "title={Simple Title}" in result
+        assert "title style" not in result
+
+
 class TestTickOptions:
     def test_axis_xtick_list(self):
         """Test setting xtick as a list of values."""

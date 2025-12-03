@@ -248,6 +248,81 @@ Row(
 )
 ```
 
+### Advanced Number Formatting with FormatNumber
+
+`FormatNumber` provides enhanced number formatting with support for:
+- Significant figures
+- Fixed decimal places
+- Thousands separators
+- Automatic handling of -0.00 (removes minus sign)
+- String passthrough
+
+```python
+from texer import FormatNumber, Ref, Iter, Row, Tabular, evaluate
+
+# Significant figures
+FormatNumber(Ref("value"), sig=2)  # 1.234 -> "1.2"
+
+# Fixed decimal places
+FormatNumber(Ref("value"), decimals=2)  # 1.234 -> "1.23"
+
+# Thousands separator
+FormatNumber(Ref("value"), thousands_sep=True)  # 2000 -> "2,000"
+
+# Custom separator
+FormatNumber(Ref("value"), thousands_sep=" ")  # 2000 -> "2 000"
+
+# Combine decimals with thousands separator
+FormatNumber(Ref("value"), decimals=2, thousands_sep=True)  # 1234.567 -> "1,234.57"
+```
+
+**Handling -0.00**: By default, `FormatNumber` removes the minus sign from negative zero:
+
+```python
+# value = -0.001
+FormatNumber(Ref("value"), decimals=2)  # "-0.001" -> "0.00" (not "-0.00")
+
+# Disable this behavior if needed
+FormatNumber(Ref("value"), decimals=2, strip_negative_zero=False)  # -> "-0.00"
+```
+
+**Complete example** with financial data:
+
+```python
+from texer import Tabular, Row, Ref, Iter, FormatNumber, evaluate
+
+table = Tabular(
+    columns="lrrr",
+    header=Row("Item", "Amount (\\$)", "Count", "Rate (\\%)"),
+    rows=Iter(
+        Ref("transactions"),
+        template=Row(
+            Ref("item"),
+            FormatNumber(Ref("amount"), decimals=2, thousands_sep=True),
+            FormatNumber(Ref("count"), thousands_sep=True),
+            FormatNumber(Ref("rate"), decimals=1),
+        ),
+    ),
+    toprule=True,
+    midrule=True,
+    bottomrule=True,
+)
+
+data = {
+    "transactions": [
+        {"item": "Revenue", "amount": 1234567.89, "count": 15000, "rate": 3.5},
+        {"item": "Costs", "amount": 987654.32, "count": 12500, "rate": 2.8},
+        {"item": "Profit", "amount": 246913.57, "count": 2500, "rate": 0.7},
+    ]
+}
+
+print(evaluate(table, data))
+# Outputs:
+# Revenue & 1,234,567.89 & 15,000 & 3.5 \\
+# Costs & 987,654.32 & 12,500 & 2.8 \\
+# Profit & 246,913.57 & 2,500 & 0.7 \\
+```
+
 ## Complete Example
 
 ```python

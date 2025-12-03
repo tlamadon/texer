@@ -1,7 +1,7 @@
 """Tests for the spec system."""
 
 import pytest
-from texer.specs import Ref, Iter, Format, Cond, Literal, Raw, Join, Call
+from texer.specs import Ref, Iter, Format, FormatNumber, Cond, Literal, Raw, Join, Call
 
 
 class TestRef:
@@ -129,3 +129,117 @@ class TestCall:
         data = {"values": [3, 1, 4, 1, 5]}
         result = Call(max, (Ref("values"),)).resolve(data)
         assert result == 5
+
+
+class TestFormatNumber:
+    """Tests for FormatNumber spec with sig, decimals, and thousands separator support."""
+
+    def test_significant_figures(self):
+        """Test formatting with significant figures."""
+        data = {"value": 1.234567}
+        assert FormatNumber(Ref("value"), sig=2).resolve(data) == "1.2"
+        assert FormatNumber(Ref("value"), sig=3).resolve(data) == "1.23"
+        assert FormatNumber(Ref("value"), sig=4).resolve(data) == "1.235"
+
+    def test_decimal_places(self):
+        """Test formatting with fixed decimal places."""
+        data = {"value": 1.234567}
+        assert FormatNumber(Ref("value"), decimals=2).resolve(data) == "1.23"
+        assert FormatNumber(Ref("value"), decimals=3).resolve(data) == "1.235"
+        assert FormatNumber(Ref("value"), decimals=0).resolve(data) == "1"
+
+    def test_negative_zero_stripping(self):
+        """Test that -0.00 is converted to 0.00."""
+        data = {"value": -0.001}
+        # With 2 decimal places, -0.001 rounds to -0.00
+        assert FormatNumber(Ref("value"), decimals=2).resolve(data) == "0.00"
+
+        # Explicit negative zero
+        data2 = {"value": -0.0}
+        assert FormatNumber(Ref("value"), decimals=2).resolve(data2) == "0.00"
+
+    def test_thousands_separator_default(self):
+        """Test thousands separator with default comma."""
+        data = {"value": 2000}
+        assert FormatNumber(Ref("value"), thousands_sep=True).resolve(data) == "2,000"
+
+        data = {"value": 1234567}
+        assert FormatNumber(Ref("value"), thousands_sep=True).resolve(data) == "1,234,567"
+
+    def test_thousands_separator_custom(self):
+        """Test thousands separator with custom character."""
+        data = {"value": 2000}
+        assert FormatNumber(Ref("value"), thousands_sep=" ").resolve(data) == "2 000"
+
+        data = {"value": 1234567}
+        assert FormatNumber(Ref("value"), thousands_sep="_").resolve(data) == "1_234_567"
+
+    def test_thousands_separator_with_decimals(self):
+        """Test thousands separator combined with decimal places."""
+        data = {"value": 1234.567}
+        result = FormatNumber(Ref("value"), decimals=2, thousands_sep=True).resolve(data)
+        assert result == "1,234.57"
+
+    def test_thousands_separator_with_sig(self):
+        """Test thousands separator combined with significant figures."""
+        data = {"value": 1234.567}
+        result = FormatNumber(Ref("value"), sig=5, thousands_sep=True).resolve(data)
+        assert result == "1,234.6"
+
+    def test_string_passthrough(self):
+        """Test that strings pass through unchanged."""
+        data = {"value": "hello"}
+        assert FormatNumber(Ref("value")).resolve(data) == "hello"
+
+        data = {"value": "N/A"}
+        assert FormatNumber(Ref("value"), sig=2).resolve(data) == "N/A"
+
+    def test_numeric_string_conversion(self):
+        """Test that numeric strings are converted and formatted."""
+        data = {"value": "1234.567"}
+        assert FormatNumber(Ref("value"), sig=3).resolve(data) == "1.23e+03"
+
+    def test_zero_handling(self):
+        """Test that zero is handled correctly."""
+        data = {"value": 0}
+        assert FormatNumber(Ref("value"), sig=2).resolve(data) == "0"
+        assert FormatNumber(Ref("value"), decimals=2).resolve(data) == "0.00"
+
+    def test_negative_numbers(self):
+        """Test negative number formatting."""
+        data = {"value": -1234.567}
+        assert FormatNumber(Ref("value"), decimals=2).resolve(data) == "-1234.57"
+
+        result = FormatNumber(Ref("value"), decimals=2, thousands_sep=True).resolve(data)
+        assert result == "-1,234.57"
+
+    def test_large_numbers(self):
+        """Test large number formatting."""
+        data = {"value": 1000000}
+        result = FormatNumber(Ref("value"), thousands_sep=True).resolve(data)
+        assert result == "1,000,000"
+
+    def test_small_numbers_scientific(self):
+        """Test that very small numbers work with sig."""
+        data = {"value": 0.00001234}
+        result = FormatNumber(Ref("value"), sig=2).resolve(data)
+        assert result == "1.2e-05"
+
+    def test_cannot_specify_both_sig_and_decimals(self):
+        """Test that specifying both sig and decimals raises an error."""
+        data = {"value": 1.234}
+        with pytest.raises(ValueError, match="Cannot specify both"):
+            FormatNumber(Ref("value"), sig=2, decimals=2).resolve(data)
+
+    def test_direct_value_not_ref(self):
+        """Test using a direct value instead of Ref."""
+        data = {}
+        assert FormatNumber(1234.567, sig=3).resolve(data) == "1.23e+03"
+        assert FormatNumber(2000, thousands_sep=True).resolve(data) == "2,000"
+
+    def test_strip_negative_zero_disabled(self):
+        """Test that negative zero stripping can be disabled."""
+        data = {"value": -0.001}
+        # With strip_negative_zero=False, should keep the minus sign
+        result = FormatNumber(Ref("value"), decimals=2, strip_negative_zero=False).resolve(data)
+        assert result == "-0.00"

@@ -351,6 +351,7 @@ class Axis:
     ylabel: str | Spec | None = None
     zlabel: str | Spec | None = None
     title: str | Spec | None = None
+    title_style: str | Spec | None = None
 
     # Axis limits
     xmin: float | Spec | None = None
@@ -437,6 +438,8 @@ class Axis:
             options["legend pos"] = resolve_value(self.legend_pos, data, scope)
         if self.legend_style is not None:
             options["legend style"] = resolve_value(self.legend_style, data, scope)
+        if self.title_style is not None:
+            options["title style"] = resolve_value(self.title_style, data, scope)
         if self.legend_cell_align is not None:
             options["legend cell align"] = resolve_value(self.legend_cell_align, data, scope)
         if self.legend_columns is not None:
@@ -591,6 +594,7 @@ class NextGroupPlot:
     ylabel: str | Spec | None = None
     zlabel: str | Spec | None = None
     title: str | Spec | None = None
+    title_style: str | Spec | None = None
 
     # Axis limits
     xmin: float | Spec | None = None
@@ -670,6 +674,8 @@ class NextGroupPlot:
             options["legend pos"] = resolve_value(self.legend_pos, data, scope)
         if self.legend_style is not None:
             options["legend style"] = resolve_value(self.legend_style, data, scope)
+        if self.title_style is not None:
+            options["title style"] = resolve_value(self.title_style, data, scope)
         if self.legend_cell_align is not None:
             options["legend cell align"] = resolve_value(self.legend_cell_align, data, scope)
         if self.legend_columns is not None:

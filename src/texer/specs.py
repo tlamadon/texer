@@ -252,6 +252,134 @@ class Format(Spec):
 
 
 @dataclass(frozen=True)
+class FormatNumber(Spec):
+    """Format numbers with advanced options for significant digits, thousands separators, and more.
+
+    Handles the -0.00 case by removing the minus sign. Strings pass through unchanged by default.
+
+    Examples:
+        FormatNumber(Ref("value"), sig=2)                    -> "1.2" for 1.234
+        FormatNumber(Ref("value"), decimals=2)               -> "1.23" for 1.234
+        FormatNumber(Ref("large_num"), thousands_sep=True)   -> "2,000" for 2000
+        FormatNumber(Ref("value"), sig=2, thousands_sep=",") -> "1,200" for 1234
+    """
+
+    value: Spec | Any
+    sig: int | None = None  # Significant digits
+    decimals: int | None = None  # Fixed decimal places
+    thousands_sep: bool | str = False  # True for comma, or custom separator
+    strip_negative_zero: bool = True  # Remove minus sign from -0.00
+
+    def resolve(self, data: Any, scope: dict[str, Any] | None = None) -> str:
+        """Resolve and format the value."""
+        val = resolve_value(self.value, data, scope)
+
+        # If it's a string and not a number, return as-is
+        if isinstance(val, str):
+            try:
+                val = float(val)
+            except (ValueError, TypeError):
+                return str(val)
+
+        # Try to convert to float for formatting
+        try:
+            num_val = float(val)
+        except (ValueError, TypeError):
+            # Not a number, return as string
+            return str(val)
+
+        # Format the number
+        if self.sig is not None and self.decimals is not None:
+            raise ValueError("Cannot specify both 'sig' and 'decimals' parameters")
+
+        if self.sig is not None:
+            # Use significant figures
+            if num_val == 0:
+                formatted = "0"
+            else:
+                # Use Python's g formatter for significant figures
+                format_str = f"{{:.{self.sig}g}}"
+                formatted = format_str.format(num_val)
+        elif self.decimals is not None:
+            # Use fixed decimal places
+            format_str = f"{{:.{self.decimals}f}}"
+            formatted = format_str.format(num_val)
+        else:
+            # Default: smart conversion - keep integers as integers
+            if num_val == int(num_val):
+                formatted = str(int(num_val))
+            else:
+                formatted = str(num_val)
+
+        # Strip negative zero if requested
+        if self.strip_negative_zero:
+            formatted = self._strip_negative_zero(formatted)
+
+        # Add thousands separator if requested
+        if self.thousands_sep:
+            separator = "," if self.thousands_sep is True else str(self.thousands_sep)
+            formatted = self._add_thousands_separator(formatted, separator)
+
+        return formatted
+
+    @staticmethod
+    def _strip_negative_zero(s: str) -> str:
+        """Remove minus sign from negative zero values like -0.00."""
+        # Check if it's a negative zero
+        if s.startswith("-"):
+            # Try to parse it
+            try:
+                val = float(s)
+                if val == 0.0 or val == -0.0:
+                    # It's negative zero, remove the minus
+                    return s[1:]
+            except ValueError:
+                pass
+        return s
+
+    @staticmethod
+    def _add_thousands_separator(s: str, sep: str = ",") -> str:
+        """Add thousands separator to a formatted number string."""
+        # Split on decimal point if present
+        if "." in s:
+            int_part, dec_part = s.split(".", 1)
+            dec_part = "." + dec_part
+        elif "e" in s.lower():
+            # Scientific notation, don't add separators
+            return s
+        else:
+            int_part = s
+            dec_part = ""
+
+        # Handle negative sign
+        if int_part.startswith("-"):
+            sign = "-"
+            int_part = int_part[1:]
+        else:
+            sign = ""
+
+        # Add thousands separators
+        # Reverse, group by 3, reverse back
+        reversed_int = int_part[::-1]
+        grouped = [reversed_int[i:i+3] for i in range(0, len(reversed_int), 3)]
+        int_part_with_sep = sep.join(grouped)[::-1]
+
+        return sign + int_part_with_sep + dec_part
+
+    def __repr__(self) -> str:
+        params = [f"{self.value!r}"]
+        if self.sig is not None:
+            params.append(f"sig={self.sig}")
+        if self.decimals is not None:
+            params.append(f"decimals={self.decimals}")
+        if self.thousands_sep:
+            params.append(f"thousands_sep={self.thousands_sep!r}")
+        if not self.strip_negative_zero:
+            params.append("strip_negative_zero=False")
+        return f"FormatNumber({', '.join(params)})"
+
+
+@dataclass(frozen=True)
 class Cond(Spec):
     """Conditional logic - returns one value or another based on condition.
 
