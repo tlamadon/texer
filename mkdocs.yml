@@ -84,6 +84,7 @@ nav:
     - Data-Driven Plots: plots/data-driven.md
     - Multiple Series: plots/multiple-series.md
     - GroupPlots: plots/groupplots.md
+    - 3D Surface Plots: plots/3d-surface.md
     - Advanced Options: plots/advanced.md
   - Specs Reference:
     - Overview: specs/overview.md

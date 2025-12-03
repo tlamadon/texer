@@ -161,7 +161,38 @@ def compile_latex_to_png(latex_content: str, output_path: Path, crop: bool = Tru
 
 def generate_plot_examples(output_dir: Path):
     """Generate example plot images."""
+    import numpy as np
+
     print("\n=== Generating Plot Examples ===")
+
+    # Example 0: 3D Surface plot
+    x = np.linspace(-3, 3, 30)
+    y = np.linspace(-3, 3, 30)
+    X, Y = np.meshgrid(x, y)
+    Z = X**2 + Y**2
+
+    plot0 = PGFPlot(
+        Axis(
+            xlabel="X",
+            ylabel="Y",
+            zlabel="Z",
+            plots=[
+                AddPlot(
+                    surf=True,
+                    coords=Coordinates(x=X.flatten(), y=Y.flatten(), z=Z.flatten()),
+                )
+            ],
+            _raw_options="colorbar, view={45}{30}",
+        )
+    )
+
+    latex0 = r"""\documentclass[border=2mm]{standalone}
+\usepackage{pgfplots}
+\pgfplotsset{compat=1.18}
+\begin{document}
+""" + evaluate(plot0, {}) + "\n\\end{document}"
+
+    compile_latex_to_png(latex0, output_dir / "plots" / "surface_3d.png")
 
     # Example 1: Basic plot
     plot1 = PGFPlot(
