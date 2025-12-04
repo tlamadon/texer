@@ -106,12 +106,37 @@ class Coordinates:
         else:
             points = self.source  # type: ignore[assignment]
 
+        # Determine if we have marker_size data
+        # Check both direct marker_size attribute and Iter source with marker_size
+        has_marker_size = (
+            self.marker_size is not None or
+            (isinstance(self.source, Iter) and self.source.marker_size is not None)
+        )
+
         # Format coordinates
         coord_strs = []
         for point in points:
             if isinstance(point, tuple):
-                formatted_values = [self._format_value(v) for v in point]
-                coord_strs.append(f"({', '.join(formatted_values)})")
+                # Check if we have marker_size data (meta)
+                # 2D with marker_size: (x, y, meta) -> (x, y) [meta]
+                # 3D with marker_size: (x, y, z, meta) -> (x, y, z) [meta]
+                # 2D without: (x, y) -> (x, y)
+                # 3D without: (x, y, z) -> (x, y, z)
+
+                if len(point) == 3 and has_marker_size:
+                    # 2D with meta: (x, y, meta) -> (x, y) [meta]
+                    x, y, meta = point
+                    coord_str = f"({self._format_value(x)}, {self._format_value(y)}) [{self._format_value(meta)}]"
+                    coord_strs.append(coord_str)
+                elif len(point) == 4:
+                    # 3D with meta: (x, y, z, meta) -> (x, y, z) [meta]
+                    x, y, z, meta = point
+                    coord_str = f"({self._format_value(x)}, {self._format_value(y)}, {self._format_value(z)}) [{self._format_value(meta)}]"
+                    coord_strs.append(coord_str)
+                else:
+                    # Regular coordinates without meta
+                    formatted_values = [self._format_value(v) for v in point]
+                    coord_strs.append(f"({', '.join(formatted_values)})")
             else:
                 # Single value (rare case)
                 coord_strs.append(f"({self._format_value(point)})")
@@ -313,11 +338,13 @@ class AddPlot:
                 scatter_src_val = resolve_value(self.scatter_src, data, scope)
                 options["scatter src"] = scatter_src_val
             # If coordinates have marker_size data and scatter_src not explicitly set,
-            # use "explicit" mode (meta data from coordinates)
+            # use "point meta=explicit" (meta data from coordinates with bracket notation)
             elif has_marker_size_data:
-                options["scatter src"] = "explicit"
+                options["point meta"] = "explicit"
                 # Add visualization depends on to map meta to mark size
-                options["visualization depends on"] = r"{\thisrow{meta} \as \perpointmarksize}"
+                # For coordinates with bracket meta: (x, y) [meta] or (x, y, z) [meta]
+                # We use \thisrow{meta} to access the meta value
+                options["visualization depends on"] = r"value \thisrow{meta} \as \perpointmarksize"
                 options["scatter/@pre marker code/.append style"] = "{/tikz/mark size=\\perpointmarksize}"
 
         # 3D variant

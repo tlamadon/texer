@@ -705,13 +705,13 @@ plot = PGFPlot(
 print(plot.render({}))
 ```
 
-This generates coordinates with a third value (the marker size) for each point:
+This generates coordinates with bracket notation for the marker size (meta data):
 
 ```latex
-\addplot[..., scatter, scatter src=explicit,
-  visualization depends on={\thisrow{meta} \as \perpointmarksize},
+\addplot[..., scatter, point meta=explicit,
+  visualization depends on={value \thisrow{meta} \as \perpointmarksize},
   scatter/@pre marker code/.append style={/tikz/mark size=\perpointmarksize}
-] coordinates {(1, 2, 5) (2, 4, 10) (3, 3, 15) (4, 5, 20) (5, 4, 25)};
+] coordinates {(1, 2) [5] (2, 4) [10] (3, 3) [15] (4, 5) [20] (5, 4) [25]};
 ```
 
 ### Quick Bubble Charts with scatter_plot()

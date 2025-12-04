@@ -22,7 +22,8 @@
       "Bash(if [ -f ~/.pypirc ])",
       "Bash(then cat ~/.pypirc)",
       "Bash(else echo \"No .pypirc file found\")",
-      "Bash(make:*)"
+      "Bash(make:*)",
+      "Bash(pdflatex:*)"
     ],
     "deny": [],
     "ask": []
