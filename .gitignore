@@ -8,3 +8,11 @@ examples/trig_plot.aux
 examples/trig_plot.log
 examples/trig_plot.pdf
 examples/trig_plot.tex
+
+# Test files
+test_numpy_marker_size.*
+test_scatter_coords_v3.*
+test_scatter_v2.*
+test_simple_scatter.*
+test_marker_size.*
+NUMPY_MARKER_SIZE_TEST_RESULTS.md

@@ -23,7 +23,10 @@
       "Bash(then cat ~/.pypirc)",
       "Bash(else echo \"No .pypirc file found\")",
       "Bash(make:*)",
-      "Bash(pdflatex:*)"
+      "Bash(pdflatex:*)",
+      "Bash(ls:*)",
+      "Bash(git rm:*)",
+      "Bash(git check-ignore:*)"
     ],
     "deny": [],
     "ask": []

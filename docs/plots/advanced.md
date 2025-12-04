@@ -709,7 +709,7 @@ This generates coordinates with bracket notation for the marker size (meta data)
 
 ```latex
 \addplot[..., scatter, point meta=explicit,
-  visualization depends on={value \thisrow{meta} \as \perpointmarksize},
+  visualization depends on={\pgfplotspointmeta \as \perpointmarksize},
   scatter/@pre marker code/.append style={/tikz/mark size=\perpointmarksize}
 ] coordinates {(1, 2) [5] (2, 4) [10] (3, 3) [15] (4, 5) [20] (5, 4) [25]};
 ```

@@ -343,8 +343,8 @@ class AddPlot:
                 options["point meta"] = "explicit"
                 # Add visualization depends on to map meta to mark size
                 # For coordinates with bracket meta: (x, y) [meta] or (x, y, z) [meta]
-                # We use \thisrow{meta} to access the meta value
-                options["visualization depends on"] = r"value \thisrow{meta} \as \perpointmarksize"
+                # We use \pgfplotspointmeta to access the meta value from coordinates
+                options["visualization depends on"] = r"{\pgfplotspointmeta \as \perpointmarksize}"
                 options["scatter/@pre marker code/.append style"] = "{/tikz/mark size=\\perpointmarksize}"
 
         # 3D variant
