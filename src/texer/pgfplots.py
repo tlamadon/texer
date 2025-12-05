@@ -350,8 +350,11 @@ class AddPlot:
                 options["scatter src"] = scatter_src_val
             elif has_marker_size_data:
                 # User wants variable marker sizes but not scatter coloring
-                # We don't use scatter mode here - just visualization depends on
-                # This avoids the gradient effect that scatter creates by default
+                # We need to enable scatter mode for the marker code to work,
+                # but we disable scatter's color mapping to keep the user's specified color
+                options["scatter"] = True
+                # Use current color (.) instead of mapped color - prevents gradient
+                options["scatter/use mapped color"] = "{draw=.!0!.,fill=.!0!.}"
                 options["visualization depends on"] = r"{\thisrow{size} \as \perpointmarksize}"
                 options["scatter/@pre marker code/.append style"] = "{/tikz/mark size=\\perpointmarksize}"
             else:
