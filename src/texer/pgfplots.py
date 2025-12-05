@@ -113,35 +113,45 @@ class Coordinates:
             (isinstance(self.source, Iter) and self.source.marker_size is not None)
         )
 
-        # Format coordinates
+        # If we have marker_size, use table format instead of coordinates
+        # because \thisrow{size} only works with table input
+        if has_marker_size:
+            return self._render_as_table(points)
+
+        # Format as coordinates (standard format without marker_size)
         coord_strs = []
         for point in points:
             if isinstance(point, tuple):
-                # Check if we have marker_size data (meta)
-                # 2D with marker_size: (x, y, meta) -> (x, y) [meta]
-                # 3D with marker_size: (x, y, z, meta) -> (x, y, z) [meta]
-                # 2D without: (x, y) -> (x, y)
-                # 3D without: (x, y, z) -> (x, y, z)
-
-                if len(point) == 3 and has_marker_size:
-                    # 2D with meta: (x, y, meta) -> (x, y) [meta]
-                    x, y, meta = point
-                    coord_str = f"({self._format_value(x)}, {self._format_value(y)}) [{self._format_value(meta)}]"
-                    coord_strs.append(coord_str)
-                elif len(point) == 4:
-                    # 3D with meta: (x, y, z, meta) -> (x, y, z) [meta]
-                    x, y, z, meta = point
-                    coord_str = f"({self._format_value(x)}, {self._format_value(y)}, {self._format_value(z)}) [{self._format_value(meta)}]"
-                    coord_strs.append(coord_str)
-                else:
-                    # Regular coordinates without meta
-                    formatted_values = [self._format_value(v) for v in point]
-                    coord_strs.append(f"({', '.join(formatted_values)})")
+                formatted_values = [self._format_value(v) for v in point]
+                coord_strs.append(f"({', '.join(formatted_values)})")
             else:
                 # Single value (rare case)
                 coord_strs.append(f"({self._format_value(point)})")
 
         return "coordinates {" + " ".join(coord_strs) + "}"
+
+    def _render_as_table(self, points: list[tuple[Any, ...]]) -> str:
+        """Render coordinates as table format for marker_size support."""
+        if not points:
+            return "table {x y size\n}"
+
+        # Determine if 3D based on point length
+        first_point = points[0]
+        is_3d = len(first_point) == 4  # (x, y, z, size) for 3D
+
+        # Build header
+        if is_3d:
+            header = "x y z size"
+        else:
+            header = "x y size"
+
+        # Build data rows
+        rows = [header]
+        for point in points:
+            formatted = [self._format_value(v) for v in point]
+            rows.append(" ".join(formatted))
+
+        return "table {\n" + "\n".join(rows) + "\n}"
 
     def _arrays_to_points_resolved(self, x: Any, y: Any, z: Any = None, marker_size: Any = None) -> list[tuple[Any, ...]]:
         """Convert resolved x, y, z, marker_size arrays to list of tuples."""
@@ -338,13 +348,10 @@ class AddPlot:
                 scatter_src_val = resolve_value(self.scatter_src, data, scope)
                 options["scatter src"] = scatter_src_val
             # If coordinates have marker_size data and scatter_src not explicitly set,
-            # use "point meta=explicit" (meta data from coordinates with bracket notation)
+            # use table format with \thisrow{size} for marker size visualization
             elif has_marker_size_data:
-                options["point meta"] = "explicit"
-                # Add visualization depends on to map meta to mark size
-                # For coordinates with bracket meta: (x, y) [meta] or (x, y, z) [meta]
-                # We use \pgfplotspointmeta to access the meta value from coordinates
-                options["visualization depends on"] = r"{\pgfplotspointmeta \as \perpointmarksize}"
+                # Use \thisrow{size} to access the size column from table data
+                options["visualization depends on"] = r"{\thisrow{size} \as \perpointmarksize}"
                 options["scatter/@pre marker code/.append style"] = "{/tikz/mark size=\\perpointmarksize}"
 
         # 3D variant
