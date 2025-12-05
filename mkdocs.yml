@@ -83,6 +83,7 @@ nav:
     - Basic Plots: plots/basic.md
     - Data-Driven Plots: plots/data-driven.md
     - Multiple Series: plots/multiple-series.md
+    - Marker Size Control: plots/marker-size.md
     - GroupPlots: plots/groupplots.md
     - 3D Surface Plots: plots/3d-surface.md
     - Advanced Options: plots/advanced.md
