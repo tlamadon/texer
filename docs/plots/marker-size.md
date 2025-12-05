@@ -32,7 +32,7 @@ print(evaluate(plot, {}))
 
 **Output:**
 
-![Static Marker Size](images/marker_size_static.png)
+![Static Marker Size](../assets/images/plots/marker_size_static.png)
 
 The `mark_size` parameter accepts:
 
@@ -87,7 +87,7 @@ print(evaluate(plot, {}))
 
 **Output:**
 
-![Multiple Series with Different Sizes](images/marker_size_multiple_series.png)
+![Multiple Series with Different Sizes](../assets/images/plots/marker_size_multiple_series.png)
 
 ---
 
@@ -125,7 +125,7 @@ print(evaluate(plot, {}))
 
 **Output:**
 
-![Bubble Chart](images/marker_size_bubble.png)
+![Bubble Chart](../assets/images/plots/marker_size_bubble.png)
 
 This generates coordinates with bracket notation for the marker size metadata:
 
@@ -166,7 +166,7 @@ print(evaluate(plot, {}))
 
 **Output:**
 
-![scatter_plot Helper](images/marker_size_scatter_helper.png)
+![scatter_plot Helper](../assets/images/plots/marker_size_scatter_helper.png)
 
 The `scatter_plot()` helper automatically:
 
@@ -224,7 +224,7 @@ print(evaluate(plot, data))
 
 **Output:**
 
-![Dynamic Marker Sizes](images/marker_size_dynamic.png)
+![Dynamic Marker Sizes](../assets/images/plots/marker_size_dynamic.png)
 
 This pattern is powerful for:
 

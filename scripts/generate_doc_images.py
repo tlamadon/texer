@@ -15,7 +15,7 @@ sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
 from texer import (
     PGFPlot, Axis, AddPlot, Coordinates, GroupPlot, NextGroupPlot,
     Table, Tabular, Row, Cell, MultiColumn,
-    Ref, Iter, Format, evaluate
+    Ref, Iter, Format, evaluate, scatter_plot
 )
 
 
@@ -461,6 +461,183 @@ def generate_plot_examples(output_dir: Path):
     compile_latex_to_png(latex6, output_dir / "plots" / "groupplot_realworld.png")
 
 
+def generate_marker_size_examples(output_dir: Path):
+    """Generate marker size documentation images."""
+    print("\n=== Generating Marker Size Examples ===")
+
+    # Example 1: Static marker size
+    plot1 = PGFPlot(
+        Axis(
+            xlabel="X",
+            ylabel="Y",
+            title="Static Marker Size (5pt)",
+            grid=True,
+            width="8cm",
+            height="6cm",
+            plots=[
+                AddPlot(
+                    color="blue",
+                    mark="*",
+                    mark_size=5,
+                    only_marks=True,
+                    coords=Coordinates(x=[1, 2, 3, 4, 5], y=[2, 4, 3, 5, 4]),
+                )
+            ],
+        )
+    )
+
+    latex1 = r"""\documentclass[border=2mm]{standalone}
+\usepackage{pgfplots}
+\pgfplotsset{compat=1.18}
+\begin{document}
+""" + evaluate(plot1, {}) + "\n\\end{document}"
+
+    compile_latex_to_png(latex1, output_dir / "plots" / "marker_size_static.png")
+
+    # Example 2: Multiple series with different sizes
+    plot2 = PGFPlot(
+        Axis(
+            xlabel="X",
+            ylabel="Y",
+            title="Multiple Series with Different Sizes",
+            legend_pos="north west",
+            grid=True,
+            width="10cm",
+            height="7cm",
+            plots=[
+                AddPlot(
+                    color="blue",
+                    mark="*",
+                    mark_size=3,
+                    only_marks=True,
+                    coords=Coordinates(x=[1, 2, 3, 4, 5], y=[2, 4, 3, 5, 4]),
+                ),
+                AddPlot(
+                    color="red",
+                    mark="square*",
+                    mark_size=6,
+                    only_marks=True,
+                    coords=Coordinates(x=[1, 2, 3, 4, 5], y=[3, 2, 4, 3, 5]),
+                ),
+                AddPlot(
+                    color="green!70!black",
+                    mark="triangle*",
+                    mark_size=9,
+                    only_marks=True,
+                    coords=Coordinates(x=[1, 2, 3, 4, 5], y=[4, 5, 2, 4, 3]),
+                ),
+            ],
+            legend=["Small (3pt)", "Medium (6pt)", "Large (9pt)"],
+        )
+    )
+
+    latex2 = r"""\documentclass[border=2mm]{standalone}
+\usepackage{pgfplots}
+\pgfplotsset{compat=1.18}
+\begin{document}
+""" + evaluate(plot2, {}) + "\n\\end{document}"
+
+    compile_latex_to_png(latex2, output_dir / "plots" / "marker_size_multiple_series.png")
+
+    # Example 3: Bubble chart with data-driven marker sizes
+    plot3 = PGFPlot(
+        Axis(
+            xlabel="X Position",
+            ylabel="Y Position",
+            title="Bubble Chart (Data-Driven Sizes)",
+            grid=True,
+            width="10cm",
+            height="7cm",
+            plots=[
+                AddPlot(
+                    color="red",
+                    mark="*",
+                    only_marks=True,
+                    scatter=True,
+                    coords=Coordinates(
+                        x=[1, 2, 3, 4, 5],
+                        y=[2, 4, 3, 5, 4],
+                        marker_size=[5, 10, 15, 20, 25]
+                    ),
+                )
+            ],
+        )
+    )
+
+    latex3 = r"""\documentclass[border=2mm]{standalone}
+\usepackage{pgfplots}
+\pgfplotsset{compat=1.18}
+\begin{document}
+""" + evaluate(plot3, {}) + "\n\\end{document}"
+
+    compile_latex_to_png(latex3, output_dir / "plots" / "marker_size_bubble.png")
+
+    # Example 4: scatter_plot helper function
+    plot4 = scatter_plot(
+        x=[1, 2, 3, 4, 5],
+        y=[2, 4, 3, 5, 4],
+        marker_size=[5, 10, 15, 20, 25],
+        xlabel="X Value",
+        ylabel="Y Value",
+        title="Easy Bubble Chart (scatter\\_plot helper)",
+        color="green!70!black",
+        mark="o"
+    )
+    plot4.axis.width = "10cm"
+    plot4.axis.height = "7cm"
+    plot4.axis.grid = True
+
+    latex4 = r"""\documentclass[border=2mm]{standalone}
+\usepackage{pgfplots}
+\pgfplotsset{compat=1.18}
+\begin{document}
+""" + evaluate(plot4, {}) + "\n\\end{document}"
+
+    compile_latex_to_png(latex4, output_dir / "plots" / "marker_size_scatter_helper.png")
+
+    # Example 5: Dynamic marker sizes from data
+    plot5 = PGFPlot(
+        Axis(
+            xlabel="Time (s)",
+            ylabel="Performance",
+            title=Ref("plot_title"),
+            grid=True,
+            width="10cm",
+            height="7cm",
+            plots=[
+                AddPlot(
+                    color="blue",
+                    mark="*",
+                    only_marks=True,
+                    scatter=True,
+                    coords=Coordinates(
+                        Iter(Ref("measurements"), x=Ref("time"), y=Ref("perf"), marker_size=Ref("importance"))
+                    ),
+                )
+            ],
+        )
+    )
+
+    data5 = {
+        "plot_title": "Performance Over Time (size = importance)",
+        "measurements": [
+            {"time": 0, "perf": 50, "importance": 5},
+            {"time": 1, "perf": 60, "importance": 8},
+            {"time": 2, "perf": 55, "importance": 12},
+            {"time": 3, "perf": 70, "importance": 15},
+            {"time": 4, "perf": 65, "importance": 20},
+        ],
+    }
+
+    latex5 = r"""\documentclass[border=2mm]{standalone}
+\usepackage{pgfplots}
+\pgfplotsset{compat=1.18}
+\begin{document}
+""" + evaluate(plot5, data5) + "\n\\end{document}"
+
+    compile_latex_to_png(latex5, output_dir / "plots" / "marker_size_dynamic.png")
+
+
 def generate_table_examples(output_dir: Path):
     """Generate example table images."""
     print("\n=== Generating Table Examples ===")
@@ -544,6 +721,7 @@ def main():
     # Generate examples
     try:
         generate_plot_examples(output_dir)
+        generate_marker_size_examples(output_dir)
         generate_table_examples(output_dir)
 
         print("\n✓ All images generated successfully!")
