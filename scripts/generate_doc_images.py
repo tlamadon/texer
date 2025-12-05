@@ -638,6 +638,193 @@ def generate_marker_size_examples(output_dir: Path):
     compile_latex_to_png(latex5, output_dir / "plots" / "marker_size_dynamic.png")
 
 
+def generate_bar_chart_examples(output_dir: Path):
+    """Generate bar chart documentation images."""
+    print("\n=== Generating Bar Chart Examples ===")
+
+    # Example 1: Vertical bar chart
+    plot1 = PGFPlot(
+        Axis(
+            xlabel="Region",
+            ylabel="Sales (M\\$)",
+            ymin=0,
+            xtick=[0, 1, 2, 3],
+            xticklabels=["North", "South", "East", "West"],
+            width="10cm",
+            height="7cm",
+            plots=[
+                AddPlot(
+                    color="blue!60",
+                    coords=Coordinates([(0, 25), (1, 40), (2, 35), (3, 50)]),
+                    _raw_options="ybar, fill=blue!60"
+                )
+            ],
+        )
+    )
+
+    latex1 = r"""\documentclass[border=2mm]{standalone}
+\usepackage{pgfplots}
+\pgfplotsset{compat=1.18}
+\begin{document}
+""" + evaluate(plot1, {}) + "\n\\end{document}"
+
+    compile_latex_to_png(latex1, output_dir / "plots" / "bar_vertical.png")
+
+    # Example 2: Horizontal bar chart
+    plot2 = PGFPlot(
+        Axis(
+            xlabel="Revenue (M\\$)",
+            ylabel="Product",
+            xmin=0,
+            ytick=[0, 1, 2, 3],
+            yticklabels=["Product A", "Product B", "Product C", "Product D"],
+            width="10cm",
+            height="7cm",
+            plots=[
+                AddPlot(
+                    color="red!60",
+                    coords=Coordinates([(25, 0), (40, 1), (35, 2), (50, 3)]),
+                    _raw_options="xbar, fill=red!60"
+                )
+            ],
+        )
+    )
+
+    latex2 = r"""\documentclass[border=2mm]{standalone}
+\usepackage{pgfplots}
+\pgfplotsset{compat=1.18}
+\begin{document}
+""" + evaluate(plot2, {}) + "\n\\end{document}"
+
+    compile_latex_to_png(latex2, output_dir / "plots" / "bar_horizontal.png")
+
+    # Example 3: Grouped bar chart
+    plot3 = PGFPlot(
+        Axis(
+            xlabel="Quarter",
+            ylabel="Revenue (M\\$)",
+            ymin=0,
+            xtick=[0, 1, 2, 3],
+            xticklabels=["Q1", "Q2", "Q3", "Q4"],
+            legend=["Product A", "Product B", "Product C"],
+            legend_pos="north west",
+            width="12cm",
+            height="8cm",
+            plots=[
+                AddPlot(
+                    color="blue!60",
+                    coords=Coordinates([(0, 20), (1, 30), (2, 25), (3, 35)]),
+                    _raw_options="ybar, fill=blue!60, bar width=7pt"
+                ),
+                AddPlot(
+                    color="red!60",
+                    coords=Coordinates([(0, 15), (1, 25), (2, 30), (3, 28)]),
+                    _raw_options="ybar, fill=red!60, bar width=7pt"
+                ),
+                AddPlot(
+                    color="green!60",
+                    coords=Coordinates([(0, 18), (1, 22), (2, 28), (3, 32)]),
+                    _raw_options="ybar, fill=green!60, bar width=7pt"
+                ),
+            ],
+        )
+    )
+
+    latex3 = r"""\documentclass[border=2mm]{standalone}
+\usepackage{pgfplots}
+\pgfplotsset{compat=1.18}
+\begin{document}
+""" + evaluate(plot3, {}) + "\n\\end{document}"
+
+    compile_latex_to_png(latex3, output_dir / "plots" / "bar_grouped.png")
+
+    # Example 4: Stacked bar chart
+    plot4 = PGFPlot(
+        Axis(
+            xlabel="Quarter",
+            ylabel="Revenue (M\\$)",
+            ymin=0,
+            xtick=[0, 1, 2, 3],
+            xticklabels=["Q1", "Q2", "Q3", "Q4"],
+            legend=["Hardware", "Software", "Services"],
+            legend_pos="north west",
+            width="10cm",
+            height="7cm",
+            _raw_options="ybar stacked, bar width=15pt",
+            plots=[
+                AddPlot(
+                    color="blue!60",
+                    coords=Coordinates([(0, 20), (1, 25), (2, 22), (3, 28)]),
+                    _raw_options="fill=blue!60"
+                ),
+                AddPlot(
+                    color="red!60",
+                    coords=Coordinates([(0, 15), (1, 18), (2, 20), (3, 22)]),
+                    _raw_options="fill=red!60"
+                ),
+                AddPlot(
+                    color="green!60",
+                    coords=Coordinates([(0, 10), (1, 12), (2, 15), (3, 18)]),
+                    _raw_options="fill=green!60"
+                ),
+            ],
+        )
+    )
+
+    latex4 = r"""\documentclass[border=2mm]{standalone}
+\usepackage{pgfplots}
+\pgfplotsset{compat=1.18}
+\begin{document}
+""" + evaluate(plot4, {}) + "\n\\end{document}"
+
+    compile_latex_to_png(latex4, output_dir / "plots" / "bar_stacked.png")
+
+    # Example 5: Dynamic bar chart
+    plot5 = PGFPlot(
+        Axis(
+            xlabel="Category",
+            ylabel=Ref("ylabel"),
+            title=Ref("title"),
+            ymin=0,
+            xtick=Ref("xtick_positions"),
+            xticklabels=Ref("categories"),
+            width="10cm",
+            height="7cm",
+            plots=[
+                AddPlot(
+                    color="purple!60",
+                    coords=Coordinates(
+                        Iter(Ref("data"), x=Ref("x"), y=Ref("y"))
+                    ),
+                    _raw_options="ybar, fill=purple!60, bar width=12pt"
+                )
+            ],
+        )
+    )
+
+    data5 = {
+        "title": "Monthly Performance",
+        "ylabel": "Score",
+        "categories": ["Jan", "Feb", "Mar", "Apr", "May"],
+        "xtick_positions": [0, 1, 2, 3, 4],
+        "data": [
+            {"x": 0, "y": 85},
+            {"x": 1, "y": 92},
+            {"x": 2, "y": 78},
+            {"x": 3, "y": 95},
+            {"x": 4, "y": 88},
+        ],
+    }
+
+    latex5 = r"""\documentclass[border=2mm]{standalone}
+\usepackage{pgfplots}
+\pgfplotsset{compat=1.18}
+\begin{document}
+""" + evaluate(plot5, data5) + "\n\\end{document}"
+
+    compile_latex_to_png(latex5, output_dir / "plots" / "bar_dynamic.png")
+
+
 def generate_table_examples(output_dir: Path):
     """Generate example table images."""
     print("\n=== Generating Table Examples ===")
@@ -722,6 +909,7 @@ def main():
     try:
         generate_plot_examples(output_dir)
         generate_marker_size_examples(output_dir)
+        generate_bar_chart_examples(output_dir)
         generate_table_examples(output_dir)
 
         print("\n✓ All images generated successfully!")
