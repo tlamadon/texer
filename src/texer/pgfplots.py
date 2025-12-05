@@ -343,16 +343,21 @@ class AddPlot:
                 has_marker_size_data = True
 
         if scatter_enabled:
-            options["scatter"] = True
             if self.scatter_src:
+                # User explicitly wants scatter with color mapping
+                options["scatter"] = True
                 scatter_src_val = resolve_value(self.scatter_src, data, scope)
                 options["scatter src"] = scatter_src_val
-            # If coordinates have marker_size data and scatter_src not explicitly set,
-            # use table format with \thisrow{size} for marker size visualization
             elif has_marker_size_data:
-                # Use \thisrow{size} to access the size column from table data
+                # User wants variable marker sizes but not scatter coloring
+                # We don't use scatter mode here - just visualization depends on
+                # This avoids the gradient effect that scatter creates by default
                 options["visualization depends on"] = r"{\thisrow{size} \as \perpointmarksize}"
                 options["scatter/@pre marker code/.append style"] = "{/tikz/mark size=\\perpointmarksize}"
+            else:
+                # scatter=True but no marker_size and no scatter_src
+                # Enable basic scatter mode
+                options["scatter"] = True
 
         # 3D variant
         base_cmd = "\\addplot3" if self.surf or self.mesh else "\\addplot"
