@@ -5,6 +5,67 @@ from __future__ import annotations
 import re
 from typing import Any
 
+
+# Regex pattern for hex color codes (with or without #)
+HEX_COLOR_PATTERN = re.compile(r"^#?([0-9A-Fa-f]{6})$")
+
+
+def hex_to_pgf_rgb(color: str) -> str:
+    """Convert a hex color code to PGF/TikZ RGB format.
+
+    Args:
+        color: A hex color code like "#5D8AA8" or "5D8AA8".
+
+    Returns:
+        The color in PGF format: "{rgb,255:red,93; green,138; blue,168}"
+
+    Raises:
+        ValueError: If the color is not a valid 6-character hex code.
+
+    Examples:
+        >>> hex_to_pgf_rgb("#5D8AA8")
+        '{rgb,255:red,93; green,138; blue,168}'
+        >>> hex_to_pgf_rgb("#FF0000")
+        '{rgb,255:red,255; green,0; blue,0}'
+        >>> hex_to_pgf_rgb("00FF00")
+        '{rgb,255:red,0; green,255; blue,0}'
+    """
+    match = HEX_COLOR_PATTERN.match(color)
+    if not match:
+        raise ValueError(
+            f"Invalid hex color code: {color!r}. "
+            "Expected format: '#RRGGBB' or 'RRGGBB'"
+        )
+
+    hex_str = match.group(1)
+    red = int(hex_str[0:2], 16)
+    green = int(hex_str[2:4], 16)
+    blue = int(hex_str[4:6], 16)
+
+    return f"{{rgb,255:red,{red}; green,{green}; blue,{blue}}}"
+
+
+def is_hex_color(color: str) -> bool:
+    """Check if a string is a valid hex color code.
+
+    Args:
+        color: A string to check.
+
+    Returns:
+        True if the string is a valid hex color code (with or without #).
+
+    Examples:
+        >>> is_hex_color("#5D8AA8")
+        True
+        >>> is_hex_color("FF0000")
+        True
+        >>> is_hex_color("blue")
+        False
+        >>> is_hex_color("#GGG")
+        False
+    """
+    return HEX_COLOR_PATTERN.match(color) is not None
+
 # Characters that need escaping in LaTeX
 LATEX_SPECIAL_CHARS = {
     "&": r"\&",

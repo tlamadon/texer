@@ -1207,3 +1207,86 @@ class TestTickOptions:
         result = groupplot.render({})
         assert "xticklabels={A,B,C}" in result
         assert "xticklabels={X,Y,Z}" in result
+
+
+class TestHexColors:
+    """Tests for hex color conversion in PGFPlots."""
+
+    def test_hex_color_with_hash(self):
+        """Test hex color code with # prefix is converted to PGF RGB format."""
+        plot = AddPlot(
+            color="#5D8AA8",
+            coords=Coordinates([(0, 1), (1, 2)]),
+        )
+        result = plot.render({})
+        assert "color={rgb,255:red,93; green,138; blue,168}" in result
+
+    def test_hex_color_without_hash(self):
+        """Test hex color code without # prefix is also converted."""
+        plot = AddPlot(
+            color="FF0000",
+            coords=Coordinates([(0, 1), (1, 2)]),
+        )
+        result = plot.render({})
+        assert "color={rgb,255:red,255; green,0; blue,0}" in result
+
+    def test_hex_color_green(self):
+        """Test pure green hex color."""
+        plot = AddPlot(
+            color="#00FF00",
+            coords=Coordinates([(0, 1), (1, 2)]),
+        )
+        result = plot.render({})
+        assert "color={rgb,255:red,0; green,255; blue,0}" in result
+
+    def test_hex_color_blue(self):
+        """Test pure blue hex color."""
+        plot = AddPlot(
+            color="#0000FF",
+            coords=Coordinates([(0, 1), (1, 2)]),
+        )
+        result = plot.render({})
+        assert "color={rgb,255:red,0; green,0; blue,255}" in result
+
+    def test_named_color_unchanged(self):
+        """Test that named colors are not affected."""
+        plot = AddPlot(
+            color="blue",
+            coords=Coordinates([(0, 1), (1, 2)]),
+        )
+        result = plot.render({})
+        assert "color=blue" in result
+        assert "rgb,255" not in result
+
+    def test_hex_color_with_ref(self):
+        """Test hex color with dynamic Ref."""
+        plot = AddPlot(
+            color=Ref("my_color"),
+            coords=Coordinates([(0, 1), (1, 2)]),
+        )
+        data = {"my_color": "#1E90FF"}  # DodgerBlue
+        result = plot.render(data)
+        assert "color={rgb,255:red,30; green,144; blue,255}" in result
+
+    def test_hex_color_lowercase(self):
+        """Test hex color with lowercase letters."""
+        plot = AddPlot(
+            color="#ff5733",
+            coords=Coordinates([(0, 1), (1, 2)]),
+        )
+        result = plot.render({})
+        assert "color={rgb,255:red,255; green,87; blue,51}" in result
+
+    def test_hex_color_in_complete_plot(self):
+        """Test hex color in a complete PGFPlot."""
+        plot = PGFPlot(
+            Axis(
+                xlabel="X",
+                ylabel="Y",
+                plots=[
+                    AddPlot(color="#5D8AA8", coords=Coordinates([(0, 1), (1, 2)])),
+                ],
+            )
+        )
+        result = plot.render({})
+        assert "color={rgb,255:red,93; green,138; blue,168}" in result

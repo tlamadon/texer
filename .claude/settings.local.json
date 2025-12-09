@@ -27,7 +27,8 @@
       "Bash(ls:*)",
       "Bash(git rm:*)",
       "Bash(git check-ignore:*)",
-      "Bash(pdftoppm:*)"
+      "Bash(pdftoppm:*)",
+      "Bash(wc:*)"
     ],
     "deny": [],
     "ask": []

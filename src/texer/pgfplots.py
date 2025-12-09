@@ -6,7 +6,7 @@ from dataclasses import dataclass, field
 from typing import Any, Literal
 
 from texer.specs import Spec, Iter, resolve_value
-from texer.utils import format_options, indent
+from texer.utils import format_options, hex_to_pgf_rgb, indent, is_hex_color
 
 # Type aliases for common PGF options
 MarkStyle = Literal[
@@ -297,7 +297,11 @@ class AddPlot:
         # Build options (resolve Specs like Ref)
         options = {}
         if self.color:
-            options["color"] = resolve_value(self.color, data, scope)
+            color_value = resolve_value(self.color, data, scope)
+            # Convert hex colors to PGF RGB format
+            if isinstance(color_value, str) and is_hex_color(color_value):
+                color_value = hex_to_pgf_rgb(color_value)
+            options["color"] = color_value
         if self.mark:
             options["mark"] = resolve_value(self.mark, data, scope)
         if self.mark_size:

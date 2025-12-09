@@ -1100,3 +1100,144 @@ Both options work in `Axis` and `NextGroupPlot` contexts and support:
 - Static strings
 - `Ref` specs for data-driven values
 - Any valid PGFPlots/TikZ style options
+
+## Hex Color Support
+
+Texer automatically converts hex color codes to PGF/TikZ RGB format, giving you precise control over colors without needing to manually calculate RGB values.
+
+### Basic Usage
+
+Use hex colors just like named colors:
+
+```python
+from texer import PGFPlot, Axis, AddPlot, Coordinates
+
+plot = PGFPlot(
+    Axis(
+        xlabel="X",
+        ylabel="Y",
+        plots=[
+            AddPlot(
+                color="#5D8AA8",  # Air Force blue
+                mark="*",
+                coords=Coordinates([(0, 0), (1, 1), (2, 4)]),
+            ),
+            AddPlot(
+                color="#FF5733",  # Coral orange
+                mark="square*",
+                coords=Coordinates([(0, 1), (1, 2), (2, 3)]),
+            ),
+        ],
+        legend=["Series A", "Series B"],
+    )
+)
+```
+
+### Hex Format
+
+Both formats are supported:
+
+- With `#` prefix: `"#5D8AA8"`
+- Without `#` prefix: `"5D8AA8"`
+
+The hex code must be exactly 6 characters (RGB, 2 characters per channel). Case-insensitive:
+
+```python
+# These are all equivalent
+AddPlot(color="#FF0000", ...)  # Red
+AddPlot(color="#ff0000", ...)  # Red (lowercase)
+AddPlot(color="FF0000", ...)   # Red (no hash)
+```
+
+### Conversion Details
+
+Hex colors are automatically converted to PGF's `{rgb,255:...}` format:
+
+| Hex Code | PGF Output |
+|----------|------------|
+| `#FF0000` | `{rgb,255:red,255; green,0; blue,0}` |
+| `#00FF00` | `{rgb,255:red,0; green,255; blue,0}` |
+| `#0000FF` | `{rgb,255:red,0; green,0; blue,255}` |
+| `#5D8AA8` | `{rgb,255:red,93; green,138; blue,168}` |
+
+### Dynamic Hex Colors with Ref
+
+Hex colors work seamlessly with `Ref` for data-driven styling:
+
+```python
+from texer import PGFPlot, Axis, AddPlot, Coordinates, Ref, Iter
+
+plot = PGFPlot(
+    Axis(
+        xlabel="Category",
+        ylabel="Value",
+        plots=Iter(
+            Ref("series"),
+            template=AddPlot(
+                color=Ref("color"),  # Can be hex or named
+                mark="*",
+                coords=Coordinates(
+                    Iter(Ref("data"), x=Ref("x"), y=Ref("y"))
+                ),
+            ),
+        ),
+        legend=Iter(Ref("series"), template=Ref("name")),
+    )
+)
+
+data = {
+    "series": [
+        {
+            "name": "Primary",
+            "color": "#1E90FF",  # Dodger blue
+            "data": [{"x": 0, "y": 1}, {"x": 1, "y": 2}],
+        },
+        {
+            "name": "Secondary",
+            "color": "#FF6347",  # Tomato
+            "data": [{"x": 0, "y": 2}, {"x": 1, "y": 3}],
+        },
+        {
+            "name": "Accent",
+            "color": "green",  # Named colors still work
+            "data": [{"x": 0, "y": 1.5}, {"x": 1, "y": 2.5}],
+        },
+    ],
+}
+
+print(plot.render(data))
+```
+
+### Hex Colors in Cycle Lists
+
+You can use hex colors in cycle lists too:
+
+```python
+plot = PGFPlot(
+    Axis(
+        xlabel="X",
+        ylabel="Y",
+        cycle_list=[
+            {"color": "#E74C3C", "mark": "*"},      # Red
+            {"color": "#3498DB", "mark": "square*"}, # Blue
+            {"color": "#2ECC71", "mark": "triangle*"}, # Green
+        ],
+        plots=[
+            AddPlot(coords=Coordinates([(0, 1), (1, 2)])),
+            AddPlot(coords=Coordinates([(0, 2), (1, 3)])),
+            AddPlot(coords=Coordinates([(0, 3), (1, 4)])),
+        ],
+    )
+)
+```
+
+### Named Colors vs Hex Colors
+
+| Feature | Named Colors | Hex Colors |
+|---------|-------------|------------|
+| Readability | `"blue"`, `"red"` | `"#0000FF"`, `"#FF0000"` |
+| Precision | Limited to predefined | Any of 16 million colors |
+| Consistency | May vary by LaTeX setup | Exact RGB values |
+| Brand colors | Approximate match only | Exact match possible |
+
+Use named colors for quick prototyping and hex colors when you need precise color matching (e.g., brand guidelines, publication requirements).

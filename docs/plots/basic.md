@@ -89,8 +89,9 @@ Axis(
 
 ```python
 AddPlot(
-    # Color
-    color="blue",           # or "red", "green", "black", etc.
+    # Color - named colors or hex codes
+    color="blue",           # Named color: "red", "green", "black", etc.
+    color="#5D8AA8",        # Hex color: automatically converted to RGB
 
     # Markers
     mark="*",              # *, o, square*, triangle*, etc.
@@ -109,6 +110,39 @@ AddPlot(
     coords=Coordinates(...),
 )
 ```
+
+### Using Hex Colors
+
+You can use hex color codes (with or without `#` prefix) for precise color control:
+
+```python
+plot = PGFPlot(
+    Axis(
+        xlabel="X",
+        ylabel="Y",
+        plots=[
+            AddPlot(
+                color="#FF5733",  # Coral orange
+                mark="*",
+                coords=Coordinates([(0, 0), (1, 2), (2, 4)]),
+            ),
+            AddPlot(
+                color="#1E90FF",  # Dodger blue
+                mark="square*",
+                coords=Coordinates([(0, 1), (1, 3), (2, 5)]),
+            ),
+        ],
+        legend=["Series A", "Series B"],
+    )
+)
+```
+
+Hex colors are automatically converted to PGF's RGB format:
+
+- `#5D8AA8` becomes `{rgb,255:red,93; green,138; blue,168}`
+- `#FF0000` becomes `{rgb,255:red,255; green,0; blue,0}`
+
+This works with both static values and dynamic `Ref` specs.
 
 ### Common Marker Types
 
