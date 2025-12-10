@@ -207,3 +207,53 @@ def wrap_environment(name: str, content: str, options: str = "") -> str:
         begin = f"\\begin{{{name}}}"
     end = f"\\end{{{name}}}"
     return f"{begin}\n{indent(content)}\n{end}"
+
+
+def cmidrule(
+    start: int,
+    end: int,
+    trim_left: str | bool = False,
+    trim_right: str | bool = False,
+) -> str:
+    """Generate a \\cmidrule command from the booktabs package.
+
+    Args:
+        start: Starting column number (1-indexed).
+        end: Ending column number (1-indexed).
+        trim_left: Left trim specification. Can be:
+            - False: no left trim
+            - True: default left trim ("l")
+            - str: custom trim width (e.g., "0.5em")
+        trim_right: Right trim specification. Can be:
+            - False: no right trim
+            - True: default right trim ("r")
+            - str: custom trim width (e.g., "0.5em")
+
+    Returns:
+        The \\cmidrule command string.
+
+    Examples:
+        >>> cmidrule(1, 3)
+        '\\\\cmidrule{1-3}'
+        >>> cmidrule(2, 4, trim_left=True, trim_right=True)
+        '\\\\cmidrule(lr){2-4}'
+        >>> cmidrule(1, 2, trim_left="0.5em")
+        '\\\\cmidrule(l{0.5em}){1-2}'
+        >>> cmidrule(1, 2, trim_left=True, trim_right="1em")
+        '\\\\cmidrule(lr{1em}){1-2}'
+    """
+    trim = ""
+    if trim_left or trim_right:
+        left_part = ""
+        right_part = ""
+        if trim_left is True:
+            left_part = "l"
+        elif trim_left:
+            left_part = f"l{{{trim_left}}}"
+        if trim_right is True:
+            right_part = "r"
+        elif trim_right:
+            right_part = f"r{{{trim_right}}}"
+        trim = f"({left_part}{right_part})"
+
+    return f"\\cmidrule{trim}{{{start}-{end}}}"

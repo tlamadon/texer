@@ -440,14 +440,22 @@ class Literal(Spec):
 class Raw(Spec):
     r"""Raw LaTeX code that should not be escaped.
 
+    Works universally in any context: as a plot item, row element, cell content, etc.
+
     Examples:
         Raw(r"\textbf{bold}")
         Raw(r"\hline")
+        Raw(r"\draw (0,0) -- (1,1);")  # In a plot
+        Raw(r"\cmidrule{2-4}")  # In a table
     """
 
     latex: str
 
     def resolve(self, data: Any, scope: dict[str, Any] | None = None) -> str:
+        return self.latex
+
+    def render(self, data: Any, scope: dict[str, Any] | None = None) -> str:
+        """Render method for compatibility with Renderable protocol."""
         return self.latex
 
     def __repr__(self) -> str:
