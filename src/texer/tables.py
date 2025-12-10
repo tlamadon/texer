@@ -91,13 +91,17 @@ class Row:
         Row("Name", "Value", "Unit")
         Row(Ref("name"), Ref("value"), Ref("unit"))
         Row(Cell(Ref("x"), bold=True), Ref("y"))
+        Row("A", "B", "C", end=r"\\[4pt]")  # Extra vertical space
+        Row("A", "B", "C", end="")  # No line ending
     """
 
     cells: tuple[Any, ...] = field(default_factory=tuple)
+    end: str = field(default=r"\\")
     _raw_options: str | None = None
 
-    def __init__(self, *cells: Any, _raw_options: str | None = None):
+    def __init__(self, *cells: Any, end: str = r"\\", _raw_options: str | None = None):
         object.__setattr__(self, "cells", cells)
+        object.__setattr__(self, "end", end)
         object.__setattr__(self, "_raw_options", _raw_options)
 
     def render(self, data: Any, scope: dict[str, Any] | None = None) -> str:
@@ -112,7 +116,9 @@ class Row:
                 rendered_cells.append(_evaluate_impl(cell, data, scope or {}, escape=False))
 
         row_content = " & ".join(rendered_cells)
-        return f"{row_content} \\\\"
+        if self.end:
+            return f"{row_content} {self.end}"
+        return row_content
 
 
 @dataclass

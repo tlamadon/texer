@@ -164,6 +164,52 @@ table = Tabular(
 !!! tip "trim_between"
     The `trim_between=True` option automatically adds `trim_right` to all but the last rule and `trim_left` to all but the first rule, creating visual gaps between adjacent rules.
 
+## Row Spacing Control
+
+Control vertical spacing with the `end` parameter on `Row`:
+
+```python
+from texer import Tabular, Row, Raw, cmidrule
+
+table = Tabular(
+    columns="lcc",
+    rows=[
+        Row("Header 1", "Header 2", "Header 3"),
+        Raw(cmidrule(1, 3)),
+        Row("Group A", "", "", end=r"\\[6pt]"),  # Extra space after this row
+        Row("  Item 1", "10", "20"),
+        Row("  Item 2", "30", "40", end=r"\\[6pt]"),
+        Row("Group B", "", ""),
+        Row("  Item 3", "50", "60"),
+    ],
+    toprule=True,
+    bottomrule=True,
+)
+```
+
+### Row end Options
+
+```python
+from texer import Row
+
+# Default: standard line ending
+Row("A", "B", "C")                    # A & B & C \\
+
+# Extra vertical space
+Row("A", "B", "C", end=r"\\[4pt]")    # A & B & C \\[4pt]
+Row("A", "B", "C", end=r"\\[1ex]")    # A & B & C \\[1ex]
+
+# No line ending (useful in special cases)
+Row("A", "B", "C", end="")            # A & B & C
+```
+
+Common spacing values:
+- `\\[2pt]` - small extra space
+- `\\[4pt]` - medium extra space
+- `\\[6pt]` - large extra space
+- `\\[1ex]` - height of an "x" in current font
+- `\\[1em]` - width of an "M" in current font
+
 ## Custom Rules with MultiColumn
 
 Insert rules between sections:
