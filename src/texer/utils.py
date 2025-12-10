@@ -209,39 +209,13 @@ def wrap_environment(name: str, content: str, options: str = "") -> str:
     return f"{begin}\n{indent(content)}\n{end}"
 
 
-def cmidrule(
+def _single_cmidrule(
     start: int,
     end: int,
     trim_left: str | bool = False,
     trim_right: str | bool = False,
 ) -> str:
-    """Generate a \\cmidrule command from the booktabs package.
-
-    Args:
-        start: Starting column number (1-indexed).
-        end: Ending column number (1-indexed).
-        trim_left: Left trim specification. Can be:
-            - False: no left trim
-            - True: default left trim ("l")
-            - str: custom trim width (e.g., "0.5em")
-        trim_right: Right trim specification. Can be:
-            - False: no right trim
-            - True: default right trim ("r")
-            - str: custom trim width (e.g., "0.5em")
-
-    Returns:
-        The \\cmidrule command string.
-
-    Examples:
-        >>> cmidrule(1, 3)
-        '\\\\cmidrule{1-3}'
-        >>> cmidrule(2, 4, trim_left=True, trim_right=True)
-        '\\\\cmidrule(lr){2-4}'
-        >>> cmidrule(1, 2, trim_left="0.5em")
-        '\\\\cmidrule(l{0.5em}){1-2}'
-        >>> cmidrule(1, 2, trim_left=True, trim_right="1em")
-        '\\\\cmidrule(lr{1em}){1-2}'
-    """
+    """Generate a single \\cmidrule command."""
     trim = ""
     if trim_left or trim_right:
         left_part = ""
@@ -257,3 +231,81 @@ def cmidrule(
         trim = f"({left_part}{right_part})"
 
     return f"\\cmidrule{trim}{{{start}-{end}}}"
+
+
+def cmidrule(
+    start: int | list[tuple[int, int]],
+    end: int | None = None,
+    trim_left: str | bool = False,
+    trim_right: str | bool = False,
+    trim_between: bool = False,
+) -> str:
+    """Generate \\cmidrule command(s) from the booktabs package.
+
+    Can generate a single cmidrule or multiple cmidrules from a list of ranges.
+
+    Args:
+        start: Either:
+            - Starting column number (1-indexed) for a single rule, OR
+            - List of (start, end) tuples for multiple rules
+        end: Ending column number (1-indexed). Required if start is an int.
+        trim_left: Left trim specification. Can be:
+            - False: no left trim
+            - True: default left trim ("l")
+            - str: custom trim width (e.g., "0.5em")
+        trim_right: Right trim specification. Can be:
+            - False: no right trim
+            - True: default right trim ("r")
+            - str: custom trim width (e.g., "0.5em")
+        trim_between: If True and multiple ranges given, automatically add
+            trim_right to all but the last rule and trim_left to all but
+            the first rule, creating gaps between adjacent rules.
+
+    Returns:
+        The \\cmidrule command string(s), space-separated if multiple.
+
+    Examples:
+        >>> cmidrule(1, 3)
+        '\\\\cmidrule{1-3}'
+        >>> cmidrule(2, 4, trim_left=True, trim_right=True)
+        '\\\\cmidrule(lr){2-4}'
+        >>> cmidrule([(2, 4), (5, 7)])
+        '\\\\cmidrule{2-4} \\\\cmidrule{5-7}'
+        >>> cmidrule([(2, 4), (5, 7)], trim_between=True)
+        '\\\\cmidrule(r){2-4} \\\\cmidrule(l){5-7}'
+        >>> cmidrule([(1, 2), (3, 4), (5, 6)], trim_between=True)
+        '\\\\cmidrule(r){1-2} \\\\cmidrule(lr){3-4} \\\\cmidrule(l){5-6}'
+    """
+    # Handle list of ranges
+    if isinstance(start, list):
+        ranges = start
+        if not ranges:
+            return ""
+
+        results = []
+        for i, (s, e) in enumerate(ranges):
+            # Determine trim for this rule
+            left = trim_left
+            right = trim_right
+
+            if trim_between and len(ranges) > 1:
+                # First rule: no left trim (unless specified), add right trim
+                # Middle rules: add both trims
+                # Last rule: add left trim, no right trim (unless specified)
+                if i == 0:
+                    right = right or True
+                elif i == len(ranges) - 1:
+                    left = left or True
+                else:
+                    left = left or True
+                    right = right or True
+
+            results.append(_single_cmidrule(s, e, left, right))
+
+        return " ".join(results)
+
+    # Single range (original API)
+    if end is None:
+        raise ValueError("end is required when start is an integer")
+
+    return _single_cmidrule(start, end, trim_left, trim_right)

@@ -82,6 +82,88 @@ table = Tabular(
 )
 ```
 
+## Partial Rules with cmidrule
+
+The `cmidrule` helper function generates `\cmidrule` commands from the booktabs package for partial horizontal rules:
+
+```python
+from texer import Tabular, Row, MultiColumn, Raw, cmidrule, evaluate
+
+table = Tabular(
+    columns="lccc",
+    rows=[
+        Row("", MultiColumn(3, "c", "Metrics")),
+        Raw(cmidrule(2, 4)),  # Rule under columns 2-4 only
+        Row("", "A", "B", "C"),
+        Row("Test 1", "1", "2", "3"),
+        Row("Test 2", "4", "5", "6"),
+    ],
+    toprule=True,
+    bottomrule=True,
+)
+```
+
+### cmidrule Options
+
+```python
+from texer import cmidrule
+
+# Basic usage
+cmidrule(1, 3)                    # \cmidrule{1-3}
+
+# With trimming (reduces rule width at edges)
+cmidrule(2, 4, trim_left=True, trim_right=True)   # \cmidrule(lr){2-4}
+
+# Custom trim widths
+cmidrule(1, 2, trim_left="0.5em")                 # \cmidrule(l{0.5em}){1-2}
+cmidrule(1, 2, trim_right="1em")                  # \cmidrule(r{1em}){1-2}
+cmidrule(1, 2, trim_left="0.5em", trim_right="0.5em")  # \cmidrule(l{0.5em}r{0.5em}){1-2}
+```
+
+### Multiple cmidrules
+
+Pass a list of `(start, end)` tuples to generate multiple rules at once:
+
+```python
+from texer import cmidrule
+
+# Multiple ranges
+cmidrule([(2, 4), (5, 7)])        # \cmidrule{2-4} \cmidrule{5-7}
+
+# With automatic trimming between adjacent rules
+cmidrule([(2, 4), (5, 7)], trim_between=True)
+# Output: \cmidrule(r){2-4} \cmidrule(l){5-7}
+
+# Three or more ranges - middle ones get both trims
+cmidrule([(1, 2), (3, 4), (5, 6)], trim_between=True)
+# Output: \cmidrule(r){1-2} \cmidrule(lr){3-4} \cmidrule(l){5-6}
+```
+
+Use in a table with grouped columns:
+
+```python
+from texer import Tabular, Row, MultiColumn, Raw, cmidrule
+
+table = Tabular(
+    columns="lcccccc",
+    rows=[
+        Row(
+            "",
+            MultiColumn(3, "c", "Group A"),
+            MultiColumn(3, "c", "Group B"),
+        ),
+        Raw(cmidrule([(2, 4), (5, 7)], trim_between=True)),
+        Row("", "X", "Y", "Z", "X", "Y", "Z"),
+        Row("Sample", "1", "2", "3", "4", "5", "6"),
+    ],
+    toprule=True,
+    bottomrule=True,
+)
+```
+
+!!! tip "trim_between"
+    The `trim_between=True` option automatically adds `trim_right` to all but the last rule and `trim_left` to all but the first rule, creating visual gaps between adjacent rules.
+
 ## Custom Rules with MultiColumn
 
 Insert rules between sections:

@@ -12,7 +12,7 @@ Specs are lazy descriptors that tell texer how to extract and transform data. Th
 | `Iter` | Loop over collections | `Iter(Ref("items"), template=...)` |
 | `Format` | Format values | `Format(Ref("x"), ".2f")` |
 | `Cond` | Conditional logic | `Cond(Ref("x") > 5, "high", "low")` |
-| `Raw` | Raw LaTeX (for plots) | `Raw(r"\textbf{bold}")` |
+| `Raw` | Raw LaTeX (tables, plots, anywhere) | `Raw(r"\cmidrule{2-4}")` |
 
 ## Ref: Accessing Data
 
