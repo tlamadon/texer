@@ -262,7 +262,7 @@ def _get_preamble(element: Any) -> list[str]:
 
     if isinstance(element, (Table, Tabular)):
         return [
-            "\\documentclass{standalone}",
+            "\\documentclass[varwidth]{standalone}",
             "\\usepackage{booktabs}",
             "",
             "\\begin{document}",
