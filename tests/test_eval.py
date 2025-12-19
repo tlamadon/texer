@@ -99,7 +99,7 @@ class TestEvaluateOutputFile:
             with open(file_path, "r") as f:
                 content = f.read()
 
-            assert "\\documentclass{standalone}" in content
+            assert "\\documentclass[varwidth]{standalone}" in content
             assert "\\usepackage{booktabs}" in content
             assert "\\begin{document}" in content
             assert "\\begin{table}" in content
@@ -191,7 +191,7 @@ class TestEvaluateOutputFile:
             with open(file_path, "r") as f:
                 content = f.read()
 
-            assert "\\documentclass{standalone}" in content
+            assert "\\documentclass[varwidth]{standalone}" in content
             assert "\\usepackage{booktabs}" in content
             assert "\\begin{tabular}" in content
 
@@ -282,5 +282,5 @@ class TestCompile:
             with open(file_path, "r") as f:
                 content = f.read()
 
-            assert "\\documentclass{standalone}" in content
+            assert "\\documentclass[varwidth]{standalone}" in content
             assert "\\begin{document}" in content
