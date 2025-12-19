@@ -260,9 +260,19 @@ def _get_preamble(element: Any) -> list[str]:
     # Check for table-related imports
     from texer.tables import Table, Tabular
 
-    if isinstance(element, (Table, Tabular)):
+    if isinstance(element, Table):
+        # Table uses floating environment, needs article class
         return [
-            "\\documentclass[varwidth]{standalone}",
+            "\\documentclass{article}",
+            "\\usepackage{booktabs}",
+            "\\pagestyle{empty}",
+            "",
+            "\\begin{document}",
+        ]
+    elif isinstance(element, Tabular):
+        # Tabular is non-floating, can use standalone
+        return [
+            "\\documentclass{standalone}",
             "\\usepackage{booktabs}",
             "",
             "\\begin{document}",
